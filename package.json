@@ -8,7 +8,7 @@
     "build": "vite build",
     "typecheck": "tsc -b",
     "preview": "vite preview",
-    "generate:data": "node scripts/generate-buildings.mjs"
+    "ingest:bdnb": "node scripts/ingest-bdnb.mjs ../BDNB/csv"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
@@ -20,6 +20,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "proj4": "^2.20.9",
     "typescript": "~5.6.3",
     "vite": "^5.4.11"
   }

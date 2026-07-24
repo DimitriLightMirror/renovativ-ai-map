@@ -10,7 +10,7 @@ export const COUNTRY: CountryConfig = {
   currency: 'EUR',
   currencySymbol: '€',
   certificateName: 'DPE',
-  mapCenter: [46.7, 2.5],
-  mapZoom: 6,
+  mapCenter: [43.85, 7.05],
+  mapZoom: 9,
   regulationModule: '../content/regulation-fr',
 };

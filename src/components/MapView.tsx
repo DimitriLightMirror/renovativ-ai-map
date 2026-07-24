@@ -31,6 +31,14 @@ const COMFORT_LEGEND: { color: string; label: string }[] = [
 
 const DPE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
 
+/** Marker radius shrinks at low zoom so 12k points stay readable. */
+function radiusForZoom(zoom: number): number {
+  if (zoom < 10) return 2.5;
+  if (zoom < 12) return 3.5;
+  if (zoom < 14) return 4.5;
+  return 5.5;
+}
+
 function markerColor(building: Building, mode: MapColorMode): string {
   if (mode === 'dpe') return labelColor(building.certificate.label);
   return classifyDh(building.comfort.dh2050).color;
@@ -52,6 +60,8 @@ export default function MapView({
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const buildingsRef = useRef<Map<string, Building>>(new Map());
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedId;
   const [infoOpen, setInfoOpen] = useState(false);
 
   // Creation de la carte, une seule fois.
@@ -61,12 +71,23 @@ export default function MapView({
       center: COUNTRY.mapCenter,
       zoom: COUNTRY.mapZoom,
       zoomControl: true,
+      // Canvas rendering keeps 12k circleMarkers fluid (SVG would crawl).
+      preferCanvas: true,
+      renderer: L.canvas({ padding: 0.5 }),
     });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributeurs',
     }).addTo(map);
+    // Scale marker radius with zoom level (keep the selection ring visible).
+    const applyRadii = () => {
+      const r = radiusForZoom(map.getZoom());
+      for (const [id, marker] of markersRef.current) {
+        marker.setStyle({ radius: id === selectedIdRef.current ? 8 : r });
+      }
+    };
+    map.on('zoomend', applyRadii);
     mapRef.current = map;
     return () => {
       map.remove();
@@ -84,7 +105,7 @@ export default function MapView({
       if (markers.has(b.id)) continue;
       buildingsRef.current.set(b.id, b);
       const marker = L.circleMarker([b.lat, b.lng], {
-        radius: 5,
+        radius: radiusForZoom(map.getZoom()),
         fillOpacity: 0.85,
         weight: 1,
         color: '#ffffff',
@@ -109,12 +130,13 @@ export default function MapView({
 
   // Anneau terracotta sur le marqueur selectionne.
   useEffect(() => {
+    const zoom = mapRef.current?.getZoom() ?? COUNTRY.mapZoom;
     for (const [id, marker] of markersRef.current) {
       const isSelected = id === selectedId;
       marker.setStyle(
         isSelected
           ? { weight: 3, color: '#b35540', radius: 8 }
-          : { weight: 1, color: '#ffffff', radius: 5 },
+          : { weight: 1, color: '#ffffff', radius: radiusForZoom(zoom) },
       );
       if (isSelected) marker.bringToFront();
     }

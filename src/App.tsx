@@ -60,7 +60,7 @@ export default function App() {
             {formatNumber(stats.total)} bâtiments cartographiés
           </span>
           <span className="stats-bar__chip">
-            {Object.keys(stats.perCity).length} métropoles
+            {Object.keys(stats.perCity).length} communes
           </span>
           <span className="stats-bar__chip stats-bar__chip--alert">
             {fgPct} % classés F ou G
