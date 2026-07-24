@@ -1,0 +1,883 @@
+/* ==========================================================================
+   Renovativ AI Map — brand theme
+   Terracotta #D77259 · Sand #CDC7B7 · Deep green #273F3F
+   ========================================================================== */
+
+:root {
+  /* Brand colors */
+  --color-terracotta: #d77259;
+  --color-sand: #cdc7b7;
+  --color-deep-green: #273f3f;
+
+  /* Terracotta tints & shades */
+  --color-terracotta-light: #e89b88;
+  --color-terracotta-lighter: #f5c9bd;
+  --color-terracotta-dark: #b35540;
+  --color-terracotta-darker: #8c3f2e;
+
+  /* Sand tints & shades */
+  --color-sand-light: #e3dfd4;
+  --color-sand-lighter: #f4f1e9;
+  --color-sand-dark: #b3ab97;
+  --color-sand-darker: #968d76;
+
+  /* Deep green tints & shades */
+  --color-deep-green-light: #3d5c5c;
+  --color-deep-green-lighter: #5c7a7a;
+  --color-deep-green-dark: #1b2d2d;
+  --color-deep-green-darker: #101c1c;
+
+  /* Neutrals */
+  --color-white: #ffffff;
+  --color-ink: #232323;
+  --color-ink-soft: #5a5a5a;
+  --color-border: #e0dbd0;
+
+  /* Semantic */
+  --color-surface: #fbfaf7;
+  --color-accent: var(--color-terracotta);
+  --color-accent-hover: var(--color-terracotta-dark);
+  --color-header-bg: var(--color-deep-green);
+  --color-header-text: #f4f1e9;
+
+  /* Official French DPE A-to-G ramp (green to red) */
+  --dpe-a: #319834;
+  --dpe-b: #33cc31;
+  --dpe-c: #cbfc34;
+  --dpe-d: #fbfe06;
+  --dpe-e: #fbcc0a;
+  --dpe-f: #fb9c06;
+  --dpe-g: #fa0206;
+
+  /* Summer comfort ramp */
+  --comfort-green: #319834;
+  --comfort-yellow: #fbfe06;
+  --comfort-orange: #fb9c06;
+  --comfort-red: #fa0206;
+
+  /* Spacing & shape */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --shadow-panel: 0 4px 24px rgba(35, 35, 35, 0.14);
+
+  /* Layout metrics */
+  --header-height: 60px;
+  --panel-width: 420px;
+
+  /* Type */
+  --font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   Base reset
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   App header — deep green, logo left, title, search slot right
+   -------------------------------------------------------------------------- */
+
+.app-header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 0 var(--space-lg);
+  background-color: var(--color-header-bg);
+  color: var(--color-header-text);
+}
+
+.app-header__logo {
+  height: 36px;
+  width: auto;
+}
+
+.app-header__title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.app-header__search {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 260px;
+}
+
+.app-header__search input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.92);
+  color: var(--color-ink);
+}
+
+.app-header__search input:focus {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   Full-viewport map container
+   -------------------------------------------------------------------------- */
+
+.map-container {
+  position: relative;
+  height: calc(100vh - var(--header-height));
+  width: 100%;
+  background-color: var(--color-sand-light);
+}
+
+.map-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Right sliding detail panel — sand background
+   -------------------------------------------------------------------------- */
+
+.detail-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: var(--panel-width);
+  max-width: 92vw;
+  background-color: var(--color-sand-lighter);
+  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-panel);
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  z-index: 1000;
+}
+
+.detail-panel.is-open {
+  transform: translateX(0);
+}
+
+.detail-panel__close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  color: var(--color-ink-soft);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.detail-panel__close:hover {
+  background-color: var(--color-sand-light);
+  color: var(--color-ink);
+}
+
+.detail-panel__section {
+  margin-top: var(--space-lg);
+}
+
+.detail-panel__section h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-deep-green);
+  margin-bottom: var(--space-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Tab bar
+   -------------------------------------------------------------------------- */
+
+.tab-bar {
+  display: flex;
+  gap: var(--space-xs);
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: var(--space-md);
+}
+
+.tab-bar__tab {
+  border: none;
+  background: transparent;
+  padding: var(--space-sm) var(--space-md);
+  font-weight: 500;
+  color: var(--color-ink-soft);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.tab-bar__tab:hover {
+  color: var(--color-deep-green);
+}
+
+.tab-bar__tab.is-active {
+  color: var(--color-deep-green);
+  border-bottom-color: var(--color-terracotta);
+}
+
+/* --------------------------------------------------------------------------
+   DPE badges — official French A-to-G green-to-red ramp
+   -------------------------------------------------------------------------- */
+
+.dpe-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-ink);
+}
+
+.dpe-a { background-color: var(--dpe-a); color: var(--color-white); }
+.dpe-b { background-color: var(--dpe-b); color: var(--color-ink); }
+.dpe-c { background-color: var(--dpe-c); color: var(--color-ink); }
+.dpe-d { background-color: var(--dpe-d); color: var(--color-ink); }
+.dpe-e { background-color: var(--dpe-e); color: var(--color-ink); }
+.dpe-f { background-color: var(--dpe-f); color: var(--color-ink); }
+.dpe-g { background-color: var(--dpe-g); color: var(--color-white); }
+
+/* --------------------------------------------------------------------------
+   Comfort bubbles — summer comfort indicator
+   -------------------------------------------------------------------------- */
+
+.comfort-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.comfort-green  { background-color: #e2f2e2; color: #20621f; border: 1px solid var(--comfort-green); }
+.comfort-yellow { background-color: #fdfbd6; color: #6a6a10; border: 1px solid #d6d60a; }
+.comfort-orange { background-color: #fdeed4; color: #8a5203; border: 1px solid var(--comfort-orange); }
+.comfort-red    { background-color: #fbdcdc; color: #8f0808; border: 1px solid var(--comfort-red); }
+
+/* --------------------------------------------------------------------------
+   Buttons — terracotta accent
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border-color: var(--color-terracotta);
+  color: var(--color-terracotta-dark);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-terracotta-lighter);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-deep-green);
+}
+
+.btn-ghost:hover {
+  background-color: var(--color-sand-light);
+}
+
+/* --------------------------------------------------------------------------
+   Small cards
+   -------------------------------------------------------------------------- */
+
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.card + .card {
+  margin-top: var(--space-sm);
+}
+
+.card__label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-soft);
+  margin-bottom: var(--space-xs);
+}
+
+.card__value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-deep-green);
+}
+
+/* --------------------------------------------------------------------------
+   Map leaflet root & overlay controls
+   -------------------------------------------------------------------------- */
+
+.map-leaflet {
+  position: absolute;
+  inset: 0;
+}
+
+.map-controls {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 900;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.map-controls__toggle {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.btn-sm {
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.85rem;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-sm);
+  align-items: center;
+}
+
+.map-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--color-ink);
+}
+
+.map-legend__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(35, 35, 35, 0.2);
+}
+
+.map-legend__note {
+  font-size: 0.75rem;
+  color: var(--color-ink-soft);
+  font-style: italic;
+}
+
+.map-controls__more {
+  align-self: flex-start;
+  font-size: 0.82rem;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.map-info {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-ink);
+  background-color: var(--color-sand-lighter);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+/* --------------------------------------------------------------------------
+   Search bar dropdown
+   -------------------------------------------------------------------------- */
+
+.search-bar {
+  position: relative;
+}
+
+.search-bar__results {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  list-style: none;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+  z-index: 1200;
+}
+
+.search-bar__result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.search-bar__result:hover,
+.search-bar__result:focus-visible {
+  background-color: var(--color-sand-lighter);
+}
+
+.search-bar__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.search-bar__address {
+  font-weight: 600;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-bar__city {
+  font-size: 0.8rem;
+  color: var(--color-ink-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Badges size variants
+   -------------------------------------------------------------------------- */
+
+.dpe-badge--sm {
+  min-width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.78rem;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.dpe-badge--lg {
+  min-width: 3rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  border-radius: var(--radius-md);
+}
+
+/* --------------------------------------------------------------------------
+   Detail panel content
+   -------------------------------------------------------------------------- */
+
+.detail-panel__header {
+  margin-bottom: var(--space-md);
+  padding-right: var(--space-xl);
+}
+
+.detail-panel__address {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-deep-green);
+}
+
+.detail-panel__city {
+  font-size: 0.85rem;
+  color: var(--color-ink-soft);
+}
+
+.tab-bar {
+  flex-wrap: wrap;
+}
+
+.tab-bar__tab {
+  padding: var(--space-sm) var(--space-sm);
+  font-size: 0.85rem;
+}
+
+.source-tag {
+  display: inline-block;
+  margin-left: var(--space-sm);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background-color: var(--color-sand-light);
+  color: var(--color-ink-soft);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
+.kv-list {
+  padding: var(--space-sm) var(--space-md);
+}
+
+.kv-list__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.kv-list__row:last-child {
+  border-bottom: none;
+}
+
+.kv-list__row dt {
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.kv-list__row dd {
+  color: var(--color-ink);
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.kv-list--compact {
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+/* --------------------------------------------------------------------------
+   DPE tab
+   -------------------------------------------------------------------------- */
+
+.dpe-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.dpe-hero__badges {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.dpe-hero__badge-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.dpe-hero__values p {
+  font-size: 0.9rem;
+  color: var(--color-ink);
+}
+
+.dpe-gauge {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: var(--space-sm) 0;
+}
+
+.note {
+  font-size: 0.8rem;
+  color: var(--color-ink-soft);
+  line-height: 1.45;
+  margin-top: var(--space-sm);
+}
+
+.note--cooling {
+  background-color: var(--color-sand-light);
+  border-left: 3px solid var(--color-terracotta);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-ink);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-sm);
+}
+
+.stat-grid .card + .card {
+  margin-top: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Regulation cards
+   -------------------------------------------------------------------------- */
+
+.regulation-card__title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-deep-green);
+  margin-bottom: var(--space-xs);
+}
+
+.regulation-card__summary {
+  font-size: 0.85rem;
+  color: var(--color-ink);
+  line-height: 1.5;
+}
+
+.regulation-card__meta {
+  margin-top: var(--space-sm);
+  font-size: 0.78rem;
+  color: var(--color-ink-soft);
+}
+
+.regulation-card__link {
+  display: inline-block;
+  margin-top: var(--space-xs);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-terracotta-dark);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-terracotta-light);
+}
+
+.regulation-card__link:hover {
+  color: var(--color-terracotta-darker);
+  border-bottom-color: var(--color-terracotta-dark);
+}
+
+/* --------------------------------------------------------------------------
+   Renovation tab
+   -------------------------------------------------------------------------- */
+
+.objective-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.chapelet {
+  width: 100%;
+  height: auto;
+  display: block;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+}
+
+.scenario-card__gestures {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.scenario-card__gestures li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-sm);
+  font-size: 0.88rem;
+}
+
+.scenario-card__lot {
+  font-size: 0.75rem;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+}
+
+.label-shift {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Heatwave tab
+   -------------------------------------------------------------------------- */
+
+.comfort-row {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.comfort-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+}
+
+.comfort-cell__year {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-deep-green);
+}
+
+.comfort-cell__bubble {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-white);
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(35, 35, 35, 0.35);
+}
+
+.comfort-cell__value {
+  font-size: 0.78rem;
+  color: var(--color-ink-soft);
+}
+
+.heatwave-card h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-deep-green);
+}
+
+.heatwave-card p {
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.heatwave-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.heatwave-card__cost {
+  margin-top: var(--space-sm);
+  font-weight: 600;
+  color: var(--color-terracotta-dark);
+}
+
+.priority-chip {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.priority-chip--essentiel {
+  background-color: var(--color-terracotta);
+  color: var(--color-white);
+}
+
+.priority-chip--recommande {
+  background-color: var(--color-deep-green-light);
+  color: var(--color-white);
+}
+
+.priority-chip--optionnel {
+  background-color: var(--color-sand-light);
+  color: var(--color-ink);
+}
+
+/* --------------------------------------------------------------------------
+   Stats bar (map footer)
+   -------------------------------------------------------------------------- */
+
+.stats-bar {
+  position: absolute;
+  bottom: var(--space-md);
+  left: var(--space-md);
+  z-index: 900;
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.stats-bar__chip {
+  background-color: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-deep-green);
+  box-shadow: 0 2px 8px rgba(35, 35, 35, 0.1);
+}
+
+.stats-bar__chip--alert {
+  color: var(--color-terracotta-darker);
+  border-color: var(--color-terracotta-light);
+}
+
+/* --------------------------------------------------------------------------
+   Small screens
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .app-header__title {
+    display: none;
+  }
+
+  .map-controls {
+    max-width: 260px;
+  }
+}
