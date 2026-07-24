@@ -1,7 +1,7 @@
 /**
- * simulate.ts — simulation d'un scenario multi-gestes et suggestion du
- * meilleur paquet de travaux (le scenario recommande du chapelet).
- * Les reductions se combinent de facon multiplicative, plafonnees a 90 %.
+ * simulate.ts — simulation of a multi-gesture scenario and suggestion of the
+ * best works package (the recommended scenario of the ranked gesture chart).
+ * Reductions combine multiplicatively, capped at 90 %.
  */
 
 import type {
@@ -10,10 +10,10 @@ import type {
   OptimizationObjective,
   RenovationGesture,
 } from '../types';
-import { GESTURES_FR } from '../content/gestures-fr';
+import { GESTURES_UK } from '../content/gestures-uk';
 import { finalLabel, labelFromEp, labelFromGes } from './dpe';
 import {
-  ENERGY_PRICE_EUR_PER_KWH,
+  ENERGY_PRICE_GBP_PER_KWH,
   MAX_COMBINED_REDUCTION,
   estimateCost,
   evaluateApplicability,
@@ -22,7 +22,7 @@ import {
 } from './scenarios';
 
 export interface SimulationResult {
-  /** Gestes retenus (ids demandes, hors gestes requis auto-ajoutes). */
+  /** Selected gestures (requested ids, excluding auto-added required gestures). */
   gestureIds: string[];
   newEp: number;
   newGes: number;
@@ -36,16 +36,16 @@ export interface SimulationResult {
   paybackYears: number;
 }
 
-/** Nombre maximal de gestes dans un paquet suggere. */
+/** Maximum number of gestures in a suggested package. */
 export const MAX_PACKAGE_GESTURES = 4;
 
-/** Developpe la liste d'ids en ajoutant les gestes requis, sans doublon. */
+/** Expands the id list by adding required gestures, without duplicates. */
 function expandWithRequires(gestureIds: string[]): RenovationGesture[] {
   const picked: RenovationGesture[] = [];
   const seen = new Set<string>();
   const push = (id: string): void => {
     if (seen.has(id)) return;
-    const gesture = GESTURES_FR.find((g) => g.id === id);
+    const gesture = GESTURES_UK.find((g) => g.id === id);
     if (!gesture) return;
     seen.add(id);
     picked.push(gesture);
@@ -56,8 +56,8 @@ function expandWithRequires(gestureIds: string[]): RenovationGesture[] {
 }
 
 /**
- * Simule l'application combinee de plusieurs gestes sur un batiment.
- * Reductions multiplicatives par indicateur, plafond de 90 %.
+ * Simulates the combined application of several gestures on a building.
+ * Multiplicative reductions per indicator, 90 % cap.
  */
 export function simulateScenario(building: Building, gestureIds: string[]): SimulationResult {
   const gestures = expandWithRequires(gestureIds);
@@ -80,7 +80,7 @@ export function simulateScenario(building: Building, gestureIds: string[]): Simu
   const newEp = building.certificate.ep * (1 - epReduction);
   const newGes = building.certificate.ges * (1 - gesReduction);
   const savedKwhEp = building.annualConsumptionKwhEp * epReduction;
-  const totalAnnualSaving = savedKwhEp * ENERGY_PRICE_EUR_PER_KWH;
+  const totalAnnualSaving = savedKwhEp * ENERGY_PRICE_GBP_PER_KWH;
 
   return {
     gestureIds,
@@ -98,15 +98,15 @@ export function simulateScenario(building: Building, gestureIds: string[]): Simu
 }
 
 export interface PackageSuggestion extends SimulationResult {
-  /** true si le budget fourni a limite la selection. */
+  /** true if the provided budget limited the selection. */
   budgetLimited: boolean;
 }
 
 /**
- * Suggere le meilleur paquet de gestes pour un objectif donne :
- * parcours glouton du classement, gestes applicables uniquement, sans
- * conflit de lot (un seul geste par lot, gestes requis compris),
- * dans la limite du budget et de 4 gestes maximum.
+ * Suggests the best gesture package for a given objective:
+ * greedy walk of the ranking, applicable gestures only, no lot conflict
+ * (one gesture per lot, required gestures included), within budget and
+ * a maximum of 4 gestures.
  */
 export function suggestBestPackage(
   building: Building,
@@ -124,17 +124,17 @@ export function suggestBestPackage(
 
     const gesture = result.gesture;
     const required = gesture.requiresGestureIds
-      .map((id) => GESTURES_FR.find((g) => g.id === id))
+      .map((id) => GESTURES_UK.find((g) => g.id === id))
       .filter((g): g is RenovationGesture => g !== undefined);
 
-    // Conflit : lot deja couvert par un geste retenu (ou ses requis).
+    // Conflict: lot already covered by a picked gesture (or its requirements).
     const lots = [gesture.lot, ...required.map((g) => g.lot)];
     if (lots.some((lot) => usedLots.has(lot))) continue;
 
-    // Les gestes requis doivent eux aussi etre applicables.
+    // Required gestures must themselves be applicable.
     if (required.some((g) => !evaluateApplicability(building, g).applicable)) continue;
 
-    // estimatedCost inclut deja le cout des gestes requis.
+    // estimatedCost already includes the cost of required gestures.
     if (budget !== undefined && spent + result.estimatedCost > budget) continue;
 
     pickedIds.push(gesture.id);

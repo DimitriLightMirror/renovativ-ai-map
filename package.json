@@ -8,7 +8,7 @@
     "build": "vite build",
     "typecheck": "tsc -b",
     "preview": "vite preview",
-    "generate:data": "node scripts/generate-buildings.mjs"
+    "generate:data": "node scripts/generate-buildings-uk.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

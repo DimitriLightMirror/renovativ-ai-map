@@ -1,6 +1,6 @@
 /**
- * engine/index.ts — point d'entree du moteur de calcul Renovativ.
- * TypeScript pur, sans dependance runtime.
+ * engine/index.ts — entry point of the Renovativ calculation engine.
+ * Pure TypeScript, no runtime dependency.
  */
 
 export {
@@ -16,7 +16,7 @@ export { classifyDh, comfortForHorizons } from './comfort';
 export type { ComfortLevel, ComfortClassification, ComfortHorizons } from './comfort';
 
 export {
-  ENERGY_PRICE_EUR_PER_KWH,
+  ENERGY_PRICE_GBP_PER_KWH,
   MAX_COMBINED_REDUCTION,
   evaluateApplicability,
   relevantSurface,

@@ -9,8 +9,8 @@ interface SearchBarProps {
 const MAX_RESULTS = 8;
 
 /**
- * Recherche d'adresse dans l'en-tete.
- * Insensible a la casse et aux accents, 8 resultats maximum.
+ * Address search in the header.
+ * Case-insensitive, 8 results maximum.
  */
 export default function SearchBar({ onPick }: SearchBarProps) {
   const [query, setQuery] = useState('');
@@ -45,8 +45,8 @@ export default function SearchBar({ onPick }: SearchBarProps) {
       <input
         type="search"
         value={query}
-        placeholder="Rechercher une adresse, une ville…"
-        aria-label="Rechercher une adresse"
+        placeholder="Search for an address or a city"
+        aria-label="Search for an address"
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => {
           if (results.length > 0 && query.trim().length > 0) setOpen(true);
@@ -69,7 +69,7 @@ export default function SearchBar({ onPick }: SearchBarProps) {
                 <span className="search-bar__text">
                   <span className="search-bar__address">{b.address}</span>
                   <span className="search-bar__city">
-                    {b.postcode} {b.city}
+                    {b.city} {b.postcode}
                   </span>
                 </span>
               </button>

@@ -1,12 +1,12 @@
 /**
- * scenarios.ts — le "graphique de chapelet".
- * Filtre intelligent d'applicabilite (DSL partage), estimation de cout,
- * classement des gestes de renovation selon l'objectif choisi.
+ * scenarios.ts — the ranked gesture chart.
+ * Smart applicability filter (shared DSL), cost estimation,
+ * ranking of renovation gestures against the chosen objective.
  *
- * DSL d'applicabilite : conditions separees par ';' sur des chemins du
- * batiment (ex. "envelope.wallInsulation=aucune;constructionYear<1975").
- * Operateurs : =, !=, <, >. Le litteral `null` matche null/absent.
- * Chaine vide = toujours applicable.
+ * Applicability DSL: ';'-separated conditions on building paths
+ * (e.g. "envelope.wallInsulation=aucune;constructionYear<1975").
+ * Operators: =, !=, <, >. The `null` literal matches null/absent.
+ * Empty string = always applicable.
  */
 
 import type {
@@ -16,28 +16,28 @@ import type {
   RenovationGesture,
   ScenarioResult,
 } from '../types';
-import { GESTURES_FR } from '../content/gestures-fr';
+import { GESTURES_UK } from '../content/gestures-uk';
 import { finalLabel, labelFromEp, labelFromGes } from './dpe';
 
-/** Prix de l'energie utilise pour valoriser les economies, EUR/kWhEP. */
-export const ENERGY_PRICE_EUR_PER_KWH = 0.15;
+/** Blended energy price used to value savings, GBP/kWh. */
+export const ENERGY_PRICE_GBP_PER_KWH = 0.15;
 
-/** Plafond de reduction combinee (90 %) pour eviter les valeurs irrealistes. */
+/** Combined reduction cap (90 %) to avoid unrealistic values. */
 export const MAX_COMBINED_REDUCTION = 0.9;
 
 // ---------------------------------------------------------------------------
-// Filtre intelligent : evaluation du DSL
+// Smart filter: DSL evaluation
 // ---------------------------------------------------------------------------
 
 export interface ApplicabilityCheck {
   applicable: boolean;
-  /** Raison lisible quand le geste n'est pas applicable, null sinon. */
+  /** Readable reason when the gesture does not apply, null otherwise. */
   reason: string | null;
 }
 
 type Primitive = string | number | boolean | null | undefined;
 
-/** Lit un chemin pointe sur le batiment ("envelope.wallInsulation" ...). */
+/** Reads a dotted path on the building ("envelope.wallInsulation" ...). */
 function readPath(building: Building, path: string): Primitive {
   let current: unknown = building;
   for (const key of path.split('.')) {
@@ -49,7 +49,7 @@ function readPath(building: Building, path: string): Primitive {
   return current as Primitive;
 }
 
-/** Convertit le litteral textuel du DSL en valeur typee. */
+/** Converts the DSL text literal into a typed value. */
 function parseLiteral(raw: string): string | number | boolean | null {
   const v = raw.trim();
   if (v === 'null') return null;
@@ -68,7 +68,7 @@ interface Condition {
 }
 
 function parseCondition(raw: string): Condition | null {
-  // Ordre important : tester '!=' avant '='.
+  // Order matters: test '!=' before '='.
   const match = raw.trim().match(/^([a-zA-Z0-9_.]+)\s*(!=|=|<|>)\s*(.+)$/);
   if (!match) return null;
   return {
@@ -83,7 +83,7 @@ function evalCondition(building: Building, cond: Condition): boolean {
   const actual = readPath(building, cond.path);
   const expected = cond.value;
 
-  // Le litteral null matche null ou absent.
+  // The null literal matches null or absent.
   if (expected === null) {
     const isAbsent = actual === null || actual === undefined;
     return cond.op === '!=' ? !isAbsent : cond.op === '=' ? isAbsent : false;
@@ -103,8 +103,8 @@ function evalCondition(building: Building, cond: Condition): boolean {
 }
 
 /**
- * Evalue la regle `applicableWhen` d'un geste sur un batiment.
- * Chaine vide = toujours applicable.
+ * Evaluates a gesture's `applicableWhen` rule on a building.
+ * Empty string = always applicable.
  */
 export function evaluateApplicability(
   building: Building,
@@ -117,14 +117,14 @@ export function evaluateApplicability(
     if (rawCond.trim() === '') continue;
     const cond = parseCondition(rawCond);
     if (!cond) {
-      return { applicable: false, reason: `Règle inconnue : ${rawCond.trim()}` };
+      return { applicable: false, reason: `Unknown rule: ${rawCond.trim()}` };
     }
     if (!evalCondition(building, cond)) {
       const actual = readPath(building, cond.path);
       const shown = actual === undefined || actual === null ? 'absent' : String(actual);
       return {
         applicable: false,
-        reason: `Condition non remplie : ${cond.raw} (valeur actuelle : ${shown})`,
+        reason: `Condition not met: ${cond.raw} (current value: ${shown})`,
       };
     }
   }
@@ -132,12 +132,12 @@ export function evaluateApplicability(
 }
 
 // ---------------------------------------------------------------------------
-// Couts
+// Costs
 // ---------------------------------------------------------------------------
 
-/** Surface de reference pour le cout au m2, selon le lot du geste. */
+/** Reference surface for per-m2 costs, depending on the gesture lot. */
 export function relevantSurface(building: Building, gesture: RenovationGesture): number {
-  // Surface vitree estimee, avec un plancher de 8 m2 pour les petits batiments.
+  // Estimated glazed area, with an 8 m2 floor for small buildings.
   const glazingArea = Math.max(8, building.livingAreaM2 * building.envelope.glazingRatio);
   switch (gesture.lot) {
     case 'murs':
@@ -163,16 +163,16 @@ export function relevantSurface(building: Building, gesture: RenovationGesture):
   }
 }
 
-/** Cout estime : cout fixe + cout au m2 x surface de reference. */
+/** Estimated cost: fixed cost + per-m2 cost x reference surface. */
 export function estimateCost(building: Building, gesture: RenovationGesture): number {
   return (gesture.fixedCost ?? 0) + (gesture.costPerM2 ?? 0) * relevantSurface(building, gesture);
 }
 
 // ---------------------------------------------------------------------------
-// Classement des gestes
+// Gesture ranking
 // ---------------------------------------------------------------------------
 
-/** Impacts combines d'un geste avec ses gestes requis (reductions multiplicatives). */
+/** Combined impacts of a gesture with its required gestures (multiplicative reductions). */
 interface CombinedImpact {
   epSavingPct: number;
   gesSavingPct: number;
@@ -180,7 +180,7 @@ interface CombinedImpact {
   totalCost: number;
 }
 
-/** Replie les gestes requis (requiresGestureIds) dans le geste parent. */
+/** Folds required gestures (requiresGestureIds) into the parent gesture. */
 export function combineWithRequires(
   building: Building,
   gesture: RenovationGesture,
@@ -208,7 +208,7 @@ export function combineWithRequires(
   };
 }
 
-/** Retour sur investissement en annees ; 99 quand le calcul n'a pas de sens. */
+/** Payback in years; 99 when the computation is meaningless. */
 export function paybackYears(cost: number, annualSaving: number): number {
   if (annualSaving <= 0) return 99;
   const years = cost / annualSaving;
@@ -217,7 +217,7 @@ export function paybackYears(cost: number, annualSaving: number): number {
 
 const clampScore = (v: number): number => Math.max(0, Math.min(100, v));
 
-/** Score 0..100 selon l'objectif d'optimisation. */
+/** Score 0..100 against the optimization objective. */
 export function scoreForObjective(
   objective: OptimizationObjective,
   impact: CombinedImpact,
@@ -242,16 +242,16 @@ export function scoreForObjective(
 }
 
 /**
- * Classe tous les gestes du corpus pour un batiment et un objectif.
- * Tri : score decroissant, gestes non applicables en fin de liste.
+ * Ranks every gesture in the corpus for a building and an objective.
+ * Sort: descending score, inapplicable gestures pushed to the end.
  */
 export function rankGestures(
   building: Building,
   objective: OptimizationObjective,
 ): ScenarioResult[] {
-  const results: ScenarioResult[] = GESTURES_FR.map((gesture) => {
+  const results: ScenarioResult[] = GESTURES_UK.map((gesture) => {
     const check = evaluateApplicability(building, gesture);
-    const impact = combineWithRequires(building, gesture, GESTURES_FR);
+    const impact = combineWithRequires(building, gesture, GESTURES_UK);
 
     const newEp = building.certificate.ep * (1 - impact.epSavingPct);
     const newGes = building.certificate.ges * (1 - impact.gesSavingPct);
@@ -259,7 +259,7 @@ export function rankGestures(
     const newLabel: EnergyLabel = finalLabel(labelFromEp(newEp), labelFromGes(newGes));
 
     const savedKwhEp = building.annualConsumptionKwhEp * impact.epSavingPct;
-    const annualSaving = savedKwhEp * ENERGY_PRICE_EUR_PER_KWH;
+    const annualSaving = savedKwhEp * ENERGY_PRICE_GBP_PER_KWH;
     const payback = paybackYears(impact.totalCost, annualSaving);
     const score = scoreForObjective(objective, impact, payback);
 

@@ -1,16 +1,16 @@
 import type { CountryConfig } from '../types';
 
 /**
- * France configuration (main branch).
- * UK and USA branches override this file with their own values.
+ * United Kingdom configuration (uk branch).
+ * Overrides the France configuration from main.
  */
 export const COUNTRY: CountryConfig = {
-  code: 'FR',
-  language: 'fr',
-  currency: 'EUR',
-  currencySymbol: '€',
-  certificateName: 'DPE',
-  mapCenter: [46.7, 2.5],
+  code: 'UK',
+  language: 'en',
+  currency: 'GBP',
+  currencySymbol: '£',
+  certificateName: 'EPC',
+  mapCenter: [54.0, -2.5],
   mapZoom: 6,
-  regulationModule: '../content/regulation-fr',
+  regulationModule: '../content/regulation-uk',
 };

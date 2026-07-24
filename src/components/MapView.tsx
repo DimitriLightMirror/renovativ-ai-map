@@ -23,13 +23,13 @@ interface MapViewProps {
 }
 
 const COMFORT_LEGEND: { color: string; label: string }[] = [
-  { color: '#2E9E5B', label: 'Confortable' },
-  { color: '#E3C41C', label: 'Inconfort modéré' },
-  { color: '#E8842C', label: 'Inconfort fort' },
-  { color: '#D0342C', label: 'Inconfort sévère' },
+  { color: '#2E9E5B', label: 'Comfortable' },
+  { color: '#E3C41C', label: 'Moderate discomfort' },
+  { color: '#E8842C', label: 'High discomfort' },
+  { color: '#D0342C', label: 'Severe discomfort' },
 ];
 
-const DPE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
+const EPC_BANDS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
 
 function markerColor(building: Building, mode: MapColorMode): string {
   if (mode === 'dpe') return labelColor(building.certificate.label);
@@ -37,8 +37,8 @@ function markerColor(building: Building, mode: MapColorMode): string {
 }
 
 /**
- * Carte Leaflet du parc bati francais.
- * Coloration par etiquette DPE ou par confort d'ete a l'horizon 2050.
+ * Leaflet map of the UK building stock.
+ * Coloured by EPC band or by summer comfort at the 2050 horizon.
  */
 export default function MapView({
   buildings,
@@ -54,7 +54,7 @@ export default function MapView({
   const buildingsRef = useRef<Map<string, Building>>(new Map());
   const [infoOpen, setInfoOpen] = useState(false);
 
-  // Creation de la carte, une seule fois.
+  // Map creation, once.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = L.map(containerRef.current, {
@@ -65,7 +65,7 @@ export default function MapView({
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributeurs',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     mapRef.current = map;
     return () => {
@@ -75,7 +75,7 @@ export default function MapView({
     };
   }, []);
 
-  // Creation des marqueurs, une seule fois (le jeu de donnees est statique).
+  // Marker creation, once (the dataset is static).
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -98,7 +98,7 @@ export default function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildings]);
 
-  // Recoloration quand le mode change.
+  // Recolouring when the mode changes.
   useEffect(() => {
     for (const [id, marker] of markersRef.current) {
       const b = buildingsRef.current.get(id);
@@ -107,7 +107,7 @@ export default function MapView({
     }
   }, [colorMode]);
 
-  // Anneau terracotta sur le marqueur selectionne.
+  // Terracotta ring on the selected marker.
   useEffect(() => {
     for (const [id, marker] of markersRef.current) {
       const isSelected = id === selectedId;
@@ -120,7 +120,7 @@ export default function MapView({
     }
   }, [selectedId]);
 
-  // Vol vers une adresse recherchee.
+  // Fly to a searched address.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focusRequest) return;
@@ -129,29 +129,29 @@ export default function MapView({
 
   return (
     <>
-      <div ref={containerRef} className="map-leaflet" aria-label="Carte du parc bâti français" />
+      <div ref={containerRef} className="map-leaflet" aria-label="Map of the UK building stock" />
 
       <div className="map-controls card">
-        <div className="map-controls__toggle" role="group" aria-label="Coloration de la carte">
+        <div className="map-controls__toggle" role="group" aria-label="Map colouring">
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'dpe' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('dpe')}
           >
-            DPE
+            EPC
           </button>
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'comfort' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('comfort')}
           >
-            Confort d’été
+            Summer comfort
           </button>
         </div>
 
-        <div className="map-legend" aria-label="Légende de la carte">
+        <div className="map-legend" aria-label="Map legend">
           {colorMode === 'dpe'
-            ? DPE_LABELS.map((label) => (
+            ? EPC_BANDS.map((label) => (
                 <span key={label} className="map-legend__item">
                   <span
                     className="map-legend__swatch"
@@ -170,7 +170,7 @@ export default function MapView({
                 </span>
               ))}
           {colorMode === 'comfort' && (
-            <span className="map-legend__note">Horizon 2050</span>
+            <span className="map-legend__note">2050 horizon</span>
           )}
         </div>
 
@@ -180,23 +180,23 @@ export default function MapView({
           aria-expanded={infoOpen}
           onClick={() => setInfoOpen((v) => !v)}
         >
-          {infoOpen ? 'Masquer l’explication' : 'Pour en savoir plus'}
+          {infoOpen ? 'Hide the explanation' : 'Find out more'}
         </button>
 
         {infoOpen && (
           <div className="map-info">
             {colorMode === 'dpe' ? (
               <p>
-                Le DPE classe chaque bâtiment de A à G selon sa consommation
-                d’énergie primaire et ses émissions de CO2. La classe retenue
-                est la moins bonne des deux. G signale une passoire thermique.
+                The EPC rates every building from A to G on its energy use and
+                its CO2 emissions. The headline band is the worse of the two.
+                G marks the least efficient homes, often called fuel-poor stock.
               </p>
             ) : (
               <p>
-                Le confort d’été mesure les degrés-heures d’inconfort : le cumul
-                des dépassements de température intérieure pendant la saison
-                chaude, sans climatisation. Ici, la projection tient compte du
-                réchauffement attendu en 2050 et de l’îlot de chaleur urbain.
+                Summer comfort counts the overheating degree-hours: the sum of
+                indoor temperature exceedances over the hot season, without air
+                conditioning. The projection shown here includes the warming
+                expected by 2050 and the urban heat island effect.
               </p>
             )}
           </div>

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { Building, OptimizationObjective, ScenarioResult } from '../../types';
 import { rankGestures, suggestBestPackage } from '../../engine';
-import { GESTURES_FR } from '../../content/gestures-fr';
-import { REGULATION_FR } from '../../content/regulation-fr';
+import { GESTURES_UK } from '../../content/gestures-uk';
+import { REGULATION_UK } from '../../content/regulation-uk';
 import RegulationCard from '../RegulationCard';
 import {
   formatCurrency,
@@ -16,13 +16,13 @@ interface RenovationTabProps {
 }
 
 const OBJECTIVES: { value: OptimizationObjective; label: string }[] = [
-  { value: 'comfort', label: 'Confort d’été' },
-  { value: 'energy', label: 'Énergie' },
-  { value: 'carbon', label: 'Carbone' },
-  { value: 'cost', label: 'Coût' },
+  { value: 'comfort', label: 'Summer comfort' },
+  { value: 'energy', label: 'Energy' },
+  { value: 'carbon', label: 'Carbon' },
+  { value: 'cost', label: 'Cost' },
 ];
 
-/** Graphique de chapelet : les 10 meilleurs gestes applicables, barres en SVG. */
+/** Ranked gesture chart: the 10 best applicable gestures, SVG bars. */
 function Chapelet({ results }: { results: ScenarioResult[] }) {
   const width = 340;
   const rowHeight = 30;
@@ -36,7 +36,7 @@ function Chapelet({ results }: { results: ScenarioResult[] }) {
       className="chapelet"
       viewBox={`0 0 ${width} ${results.length * rowHeight}`}
       role="img"
-      aria-label="Classement des gestes de rénovation"
+      aria-label="Ranking of renovation gestures"
     >
       {results.map((r, i) => {
         const y = i * rowHeight;
@@ -45,9 +45,9 @@ function Chapelet({ results }: { results: ScenarioResult[] }) {
           r.gesture.name.length > 24 ? `${r.gesture.name.slice(0, 23)}…` : r.gesture.name;
         return (
           <g key={r.gesture.id}>
-            <title>{`${r.gesture.name}. ${r.gesture.description} Coût estimé : ${formatCurrency(
+            <title>{`${r.gesture.name}. ${r.gesture.description} Estimated cost: ${formatCurrency(
               r.estimatedCost,
-            )}. Retour : ${formatPayback(r.paybackYears)}.`}</title>
+            )}. Payback: ${formatPayback(r.paybackYears)}.`}</title>
             <text x={0} y={y + 18} fontSize="10.5" fill="#232323">
               {name}
             </text>
@@ -84,7 +84,7 @@ function Chapelet({ results }: { results: ScenarioResult[] }) {
   );
 }
 
-/** Onglet Renovation : objectif, chapelet, scenario recommande, aides. */
+/** Renovation tab: objective, ranked gesture chart, recommended scenario, grants. */
 export default function RenovationTab({ building }: RenovationTabProps) {
   const [objective, setObjective] = useState<OptimizationObjective>('energy');
 
@@ -93,18 +93,18 @@ export default function RenovationTab({ building }: RenovationTabProps) {
   const pack = useMemo(() => suggestBestPackage(building, objective), [building, objective]);
 
   const packGestures = pack.gestureIds
-    .map((id) => GESTURES_FR.find((g) => g.id === id))
+    .map((id) => GESTURES_UK.find((g) => g.id === id))
     .filter((g): g is NonNullable<typeof g> => g !== undefined);
 
-  const items = REGULATION_FR.filter(
+  const items = REGULATION_UK.filter(
     (r) => r.relevance.includes('renovation') || r.relevance.includes('funding'),
   );
 
   return (
     <>
       <section className="detail-panel__section">
-        <h3>Objectif de rénovation</h3>
-        <div className="objective-picker" role="group" aria-label="Objectif de rénovation">
+        <h3>Renovation objective</h3>
+        <div className="objective-picker" role="group" aria-label="Renovation objective">
           {OBJECTIVES.map((o) => (
             <button
               key={o.value}
@@ -119,23 +119,22 @@ export default function RenovationTab({ building }: RenovationTabProps) {
       </section>
 
       <section className="detail-panel__section">
-        <h3>Graphique de chapelet</h3>
+        <h3>Ranked gesture chart</h3>
         {top.length > 0 ? (
           <>
             <Chapelet results={top} />
             <p className="note">
-              Les 10 gestes les plus pertinents pour cet objectif, notés sur 100.
-              Survolez une barre pour le détail du geste et son retour sur
-              investissement.
+              The 10 most relevant gestures for this objective, scored out of 100.
+              Hover a bar for the gesture detail and its payback.
             </p>
           </>
         ) : (
-          <p className="note">Aucun geste applicable à ce bâtiment pour cet objectif.</p>
+          <p className="note">No applicable gesture for this building and objective.</p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Scénario recommandé</h3>
+        <h3>Recommended scenario</h3>
         {packGestures.length > 0 ? (
           <div className="card scenario-card">
             <ul className="scenario-card__gestures">
@@ -148,19 +147,19 @@ export default function RenovationTab({ building }: RenovationTabProps) {
             </ul>
             <dl className="kv-list kv-list--compact">
               <div className="kv-list__row">
-                <dt>Coût total estimé</dt>
+                <dt>Total estimated cost</dt>
                 <dd>{formatCurrency(pack.totalCost)}</dd>
               </div>
               <div className="kv-list__row">
-                <dt>Économie annuelle</dt>
+                <dt>Annual saving</dt>
                 <dd>{formatCurrency(pack.totalAnnualSaving)}</dd>
               </div>
               <div className="kv-list__row">
-                <dt>Retour sur investissement</dt>
+                <dt>Payback</dt>
                 <dd>{formatPayback(pack.paybackYears)}</dd>
               </div>
               <div className="kv-list__row">
-                <dt>Étiquette DPE</dt>
+                <dt>EPC band</dt>
                 <dd className="label-shift">
                   <span className={`dpe-badge dpe-${building.certificate.label.toLowerCase()}`}>
                     {building.certificate.label}
@@ -172,7 +171,7 @@ export default function RenovationTab({ building }: RenovationTabProps) {
                 </dd>
               </div>
               <div className="kv-list__row">
-                <dt>Inconfort d’été 2050</dt>
+                <dt>Summer discomfort 2050</dt>
                 <dd>
                   {formatDh(building.comfort.dh2050)} → {formatDh(pack.newDh2050)}
                 </dd>
@@ -180,12 +179,12 @@ export default function RenovationTab({ building }: RenovationTabProps) {
             </dl>
           </div>
         ) : (
-          <p className="note">Aucun scénario disponible pour cet objectif.</p>
+          <p className="note">No scenario available for this objective.</p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Réglementation et aides</h3>
+        <h3>Regulation and grants</h3>
         {items.map((item) => (
           <RegulationCard key={item.key} item={item} />
         ))}
