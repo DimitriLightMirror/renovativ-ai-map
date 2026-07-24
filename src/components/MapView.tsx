@@ -4,8 +4,17 @@ import 'leaflet/dist/leaflet.css';
 import type { Building } from '../types';
 import { COUNTRY } from '../config/country';
 import { classifyDh, labelColor } from '../engine';
+import { getNearestBuilding } from '../api/bbrLassox';
 
 export type MapColorMode = 'dpe' | 'comfort';
+
+/**
+ * Denmark data-source feature flag. OFF by default: when unset, the map
+ * behaves exactly as before (bundled dataset, France/UK/USA/Netherlands).
+ * When 'true', clicking the map background queries the Lassox BBR wrapper
+ * for the nearest Danish property instead of relying on bundled markers.
+ */
+const USE_LASSOX_DENMARK = import.meta.env.VITE_USE_LASSOX_DENMARK === 'true';
 
 export interface FocusRequest {
   lat: number;
@@ -62,7 +71,10 @@ export default function MapView({
   const buildingsRef = useRef<Map<string, Building>>(new Map());
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
   const [infoOpen, setInfoOpen] = useState(false);
+  const lassoxBusyRef = useRef(false);
 
   // Creation de la carte, une seule fois.
   useEffect(() => {
@@ -80,6 +92,35 @@ export default function MapView({
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributeurs',
     }).addTo(map);
+
+    // Denmark only: when the Lassox flag is on, a click on the map background
+    // queries the Lassox BBR wrapper for the nearest property and opens the
+    // panel with the result, instead of using the bundled dataset.
+    if (USE_LASSOX_DENMARK) {
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        if (lassoxBusyRef.current) return; // one lookup at a time
+        lassoxBusyRef.current = true;
+        getNearestBuilding(e.latlng.lat, e.latlng.lng)
+          .then((building) => {
+            onSelectRef.current(building);
+            // Drop a terracotta ring where the resolved building sits.
+            L.circleMarker([building.lat, building.lng], {
+              radius: 8,
+              weight: 3,
+              color: '#b35540',
+              fillColor: '#D77259',
+              fillOpacity: 0.6,
+            }).addTo(map);
+          })
+          .catch((err) => {
+            console.warn('[lassox] property lookup failed', err);
+          })
+          .finally(() => {
+            lassoxBusyRef.current = false;
+          });
+      });
+    }
+
     // Scale marker radius with zoom level (keep the selection ring visible).
     const applyRadii = () => {
       const r = radiusForZoom(map.getZoom());

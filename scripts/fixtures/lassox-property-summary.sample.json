@@ -1,0 +1,120 @@
+{
+  "propertyRelations": [
+    {
+      "bfeNumber": 2002265,
+      "propertyNumber": 79972,
+      "propertyTypeCode": 1,
+      "propertyType": "Matrikuleret Areal (grund)",
+      "municipalityCode": 157,
+      "status": "Gældende"
+    }
+  ],
+  "plots": [
+    {
+      "accessAddress": {
+        "addressText": "Vejnavn 5, 2900 Hellerup",
+        "streetName": "Vejnavn",
+        "houseNo": "5",
+        "postalCode": "2900",
+        "city": "Hellerup",
+        "municipalityCode": "0157",
+        "municipalityName": "Gentofte",
+        "regionCode": "1084",
+        "regionName": "Region Hovedstaden",
+        "cadastralNumber": "7qh"
+      }
+    }
+  ],
+  "buildings": [
+    {
+      "buildingNumber": 2,
+      "buildingUsageCode": 910,
+      "buildingUsage": "Garage med plads til et eller to køretøjer",
+      "constructionYear": 1000,
+      "reconstructionOrExtensionYear": null,
+      "outerWallMaterial": null,
+      "roofCoverMaterial": null,
+      "totalBuildingArea": 0,
+      "residentialBuildingArea": null,
+      "builtArea": 15,
+      "numberOfFloors": null,
+      "heatingInstallationCode": null,
+      "heatingInstallation": null,
+      "heatingMediumCode": null,
+      "areaOfExternalWallInsulation": null,
+      "totalBasementArea": null,
+      "totalRoofFloorArea": null,
+      "usedRoofFloorArea": null,
+      "numberOfHomesWithKitchen": 0,
+      "numberOfHomesWithoutKitchen": 0,
+      "coordinate": "POINT(723147.45 6181267.19)",
+      "coordinateSystem": "UTM Euref89 (WGS 84)",
+      "units": [],
+      "accessAddress": {
+        "addressText": "Vejnavn 5, 2900 Hellerup",
+        "streetName": "Vejnavn",
+        "houseNo": "5",
+        "postalCode": "2900",
+        "city": "Hellerup",
+        "municipalityCode": "0157",
+        "municipalityName": "Gentofte",
+        "regionName": "Region Hovedstaden",
+        "cadastralNumber": "7qh"
+      },
+      "id": "5e4ab968-76a8-4586-8a97-aa875413f8dc"
+    },
+    {
+      "buildingNumber": 1,
+      "buildingUsageCode": 120,
+      "buildingUsage": "Fritliggende enfamilieshus (parcelhus)",
+      "constructionYear": 1937,
+      "reconstructionOrExtensionYear": 2005,
+      "outerWallMaterialCode": 1,
+      "outerWallMaterial": "Mursten (tegl, kalksandsten, cementsten)",
+      "roofCoverMaterialCode": 5,
+      "roofCoverMaterial": "Tegl",
+      "totalBuildingArea": 100,
+      "residentialBuildingArea": 148,
+      "businessBuildingArea": null,
+      "builtArea": 100,
+      "areaOfExternalWallInsulation": null,
+      "numberOfFloors": 1,
+      "heatingInstallationCode": 1,
+      "heatingInstallation": "Fjernvarme/blokvarme (radiatorsystemer eller varmluftanlæg)",
+      "heatingMediumCode": null,
+      "additionalHeatingCode": null,
+      "totalBasementArea": 100,
+      "totalRoofFloorArea": 51,
+      "usedRoofFloorArea": 48,
+      "numberOfHomesWithKitchen": 1,
+      "numberOfHomesWithoutKitchen": 0,
+      "coordinate": "POINT(723131.42 6181262.6)",
+      "coordinateSystem": "UTM Euref89 (WGS 84)",
+      "floors": [
+        { "buildingFloorDesignation": "kl", "totalFloorArea": 100 },
+        { "buildingFloorDesignation": "st", "totalFloorArea": null },
+        { "buildingFloorDesignation": "01", "totalFloorArea": 51 }
+      ],
+      "units": [
+        {
+          "unitUsageCode": 120,
+          "totalArea": 148,
+          "areaForResidence": 148,
+          "numberOfRooms": 6
+        }
+      ],
+      "accessAddress": {
+        "addressText": "Vejnavn 5, 2900 Hellerup",
+        "streetName": "Vejnavn",
+        "houseNo": "5",
+        "postalCode": "2900",
+        "city": "Hellerup",
+        "municipalityCode": "0157",
+        "municipalityName": "Gentofte",
+        "regionName": "Region Hovedstaden",
+        "cadastralNumber": "7qh"
+      },
+      "id": "f8b4b693-8c3a-420e-aa74-e8ac35a51fe4"
+    }
+  ]
+}

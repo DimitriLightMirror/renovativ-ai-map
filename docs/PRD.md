@@ -162,3 +162,17 @@ Branches: `main` (France) → `uk`, `usa`.
 | 3 simulations parallèles (bâtiment, RDC, dernier étage) | V2 §4.2 |
 | Résultats synthèse/détaillé, scénarios CRUD, base de gestes, cohérence solaire | V2 §4.2 |
 | Météo 2025, projections 2050/2100 (DRIAS) | §3.2 |
+
+---
+
+## 11. Planned: Denmark Branch
+
+Denmark adaptation (`denmark` branch) builds on the same Building contract. Three data sources, in order of use:
+
+| Source | Role | Status |
+|---|---|---|
+| **Lassox BBR wrapper** (`src/api/bbrLassox.ts`) | Hosted REST wrapper over BBR (`https://api.lassox.com/data/bbr`), auth via `lasso-api-key` header | **Integrated, working** — used for the first Denmark demo. Feature flag `VITE_USE_LASSOX_DENMARK` (default OFF) routes map clicks to Lassox. Parser validated against the documented sample response (`scripts/test-lassox.mjs`). Known limitation: lookup by propertynumber + municipality only; reverse geocoding (click → BFE via DAWA) is the next step. |
+| **Datafordeler direct BBR** (`src/api/bbrDatafordeler.ts`) | Official state platform (`https://api.datafordeler.dk`, REST + GraphQL) | **Key available, scaffolded only.** Planned upgrade path from Lassox: same Building contract out, no wrapper subscription. |
+| **EMO energy labels** (`src/api/emo.ts`) | Energimærkningsdata (energy certificates A2020–G, consumption, improvement proposals) — [ens.dk](https://ens.dk/analyser-og-statistik/energimaerkningsdata) | **Key pending** (requested from emo-info@ens.dk as of 2026-07-24), **scaffolded only.** BBR and EMO data are never merged inside the API clients; the join happens at the pipeline level later. |
+
+Until EMO lands, Denmark buildings show BBR characteristics only; certificate and consumption fields stay at their documented placeholders.
