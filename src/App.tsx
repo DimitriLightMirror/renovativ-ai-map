@@ -9,8 +9,8 @@ import { formatNumber } from './utils/format';
 const logoUrl = `${import.meta.env.BASE_URL}brand/logo-terracotta.png`;
 
 /**
- * Coquille applicative : en-tete, carte plein ecran, panneau de diagnostic
- * et pied de page statistiques. La selection du batiment vit ici.
+ * Application shell: header, full-screen map, diagnostic panel
+ * and statistics footer. The building selection lives here.
  */
 export default function App() {
   const buildings = useMemo(() => getBuildings(), []);
@@ -55,15 +55,15 @@ export default function App() {
 
         <BuildingPanel building={selected} onClose={() => setSelected(null)} />
 
-        <footer className="stats-bar" aria-label="Statistiques du parc">
+        <footer className="stats-bar" aria-label="Building stock statistics">
           <span className="stats-bar__chip">
-            {formatNumber(stats.total)} bâtiments cartographiés
+            {formatNumber(stats.total)} buildings mapped
           </span>
           <span className="stats-bar__chip">
-            {Object.keys(stats.perCity).length} métropoles
+            {Object.keys(stats.perCity).length} metro areas
           </span>
           <span className="stats-bar__chip stats-bar__chip--alert">
-            {fgPct} % classés F ou G
+            {fgPct} % rated F or G
           </span>
         </footer>
       </main>

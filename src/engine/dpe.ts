@@ -1,20 +1,32 @@
 /**
- * dpe.ts — etiquettes DPE 2021 (arrete du 31 mars 2021).
- * Echelle A..G sur l'energie primaire (kWhEP/m2/an) et les GES (kgCO2/m2/an).
- * L'etiquette finale est la plus defavorable des deux.
+ * dpe.ts — HERS-style energy rating bands (usa branch).
+ *
+ * The `ep` field of the certificate carries a HERS-style index score on this
+ * branch, not kWhEP/m2/an. HERS mapping (RESNET convention):
+ *   100 = energy use of the 2006 IECC reference new home,
+ *   0   = net zero energy home,
+ *   typical existing US homes score 120 to 150.
+ * The A..G display bands below are a Renovativ presentation scale over that
+ * index, chosen so that a 2006-code new home lands in class D and deep
+ * retrofits reach A/B:
+ *   A <= 55, B <= 70, C <= 85, D <= 100, E <= 115, F <= 130, G > 130.
+ *
+ * GES bands (kgCO2/m2/an) are tuned to the US stock and grid mix, which is
+ * more carbon-intensive than the French one. The final label stays the worse
+ * of the two, exactly as on the France branch.
  */
 
 import type { EnergyLabel } from '../types';
 
 const LABELS: EnergyLabel[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-/** Seuils hauts par etiquette, kWhEP/m2/an (au-dela => etiquette suivante). */
-const EP_THRESHOLDS: readonly number[] = [70, 110, 180, 250, 330, 420];
+/** Upper band edges per label, HERS-style index points (above => next label). */
+const EP_THRESHOLDS: readonly number[] = [55, 70, 85, 100, 115, 130];
 
-/** Seuils hauts par etiquette, kgCO2/m2/an. */
-const GES_THRESHOLDS: readonly number[] = [6, 11, 30, 50, 70, 100];
+/** Upper band edges per label, kgCO2/m2/an (US stock and grid mix). */
+const GES_THRESHOLDS: readonly number[] = [8, 15, 25, 40, 60, 90];
 
-/** Couleurs officielles de l'echelle DPE, de A (vert) a G (rouge). */
+/** Display colors of the A (green) to G (red) scale, same as the France branch. */
 const LABEL_COLORS: Record<EnergyLabel, string> = {
   A: '#319834',
   B: '#33CC31',
@@ -32,32 +44,32 @@ function labelFromThresholds(value: number, thresholds: readonly number[]): Ener
   return 'G';
 }
 
-/** Etiquette energie primaire pour une consommation en kWhEP/m2/an. */
+/** Energy label for a HERS-style index score. */
 export function labelFromEp(ep: number): EnergyLabel {
   return labelFromThresholds(ep, EP_THRESHOLDS);
 }
 
-/** Etiquette GES pour des emissions en kgCO2/m2/an. */
+/** Climate label for emissions in kgCO2/m2/an. */
 export function labelFromGes(ges: number): EnergyLabel {
   return labelFromThresholds(ges, GES_THRESHOLDS);
 }
 
-/** Rang numerique d'une etiquette : A = 0 ... G = 6. */
+/** Numeric rank of a label: A = 0 ... G = 6. */
 export function labelRank(label: EnergyLabel): number {
   return LABELS.indexOf(label);
 }
 
-/** Etiquette finale DPE : la plus defavorable entre energie et GES. */
+/** Final label: the worse of the energy and climate labels. */
 export function finalLabel(epLabel: EnergyLabel, gesLabel: EnergyLabel): EnergyLabel {
   return labelRank(epLabel) >= labelRank(gesLabel) ? epLabel : gesLabel;
 }
 
-/** Etiquette finale calculee directement depuis les indicateurs. */
+/** Final label computed directly from the indicators. */
 export function labelFromIndicators(ep: number, ges: number): EnergyLabel {
   return finalLabel(labelFromEp(ep), labelFromGes(ges));
 }
 
-/** Couleur d'affichage (echelle officielle DPE). */
+/** Display color (shared A to G scale). */
 export function labelColor(label: EnergyLabel): string {
   return LABEL_COLORS[label];
 }

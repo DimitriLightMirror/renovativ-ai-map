@@ -1,16 +1,16 @@
 import type { CountryConfig } from '../types';
 
 /**
- * France configuration (main branch).
- * UK and USA branches override this file with their own values.
+ * United States configuration (usa branch).
+ * HERS-style energy rating, USD, English UI, continental US map view.
  */
 export const COUNTRY: CountryConfig = {
-  code: 'FR',
-  language: 'fr',
-  currency: 'EUR',
-  currencySymbol: '€',
-  certificateName: 'DPE',
-  mapCenter: [46.7, 2.5],
-  mapZoom: 6,
-  regulationModule: '../content/regulation-fr',
+  code: 'US',
+  language: 'en',
+  currency: 'USD',
+  currencySymbol: '$',
+  certificateName: 'HERS Index',
+  mapCenter: [39.5, -98.35],
+  mapZoom: 5,
+  regulationModule: '../content/regulation-us',
 };

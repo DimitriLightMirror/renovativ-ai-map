@@ -10,7 +10,7 @@ import type {
   OptimizationObjective,
   RenovationGesture,
 } from '../types';
-import { GESTURES_FR } from '../content/gestures-fr';
+import { GESTURES_US } from '../content/gestures-us';
 import { finalLabel, labelFromEp, labelFromGes } from './dpe';
 import {
   ENERGY_PRICE_EUR_PER_KWH,
@@ -45,7 +45,7 @@ function expandWithRequires(gestureIds: string[]): RenovationGesture[] {
   const seen = new Set<string>();
   const push = (id: string): void => {
     if (seen.has(id)) return;
-    const gesture = GESTURES_FR.find((g) => g.id === id);
+    const gesture = GESTURES_US.find((g) => g.id === id);
     if (!gesture) return;
     seen.add(id);
     picked.push(gesture);
@@ -124,7 +124,7 @@ export function suggestBestPackage(
 
     const gesture = result.gesture;
     const required = gesture.requiresGestureIds
-      .map((id) => GESTURES_FR.find((g) => g.id === id))
+      .map((id) => GESTURES_US.find((g) => g.id === id))
       .filter((g): g is RenovationGesture => g !== undefined);
 
     // Conflit : lot deja couvert par un geste retenu (ou ses requis).

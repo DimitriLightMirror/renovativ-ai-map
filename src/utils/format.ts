@@ -1,179 +1,178 @@
 /**
- * format.ts — aides d'affichage francais pour l'interface.
- * Nombres, unites, et traduction des valeurs d'enum du contrat de donnees.
+ * format.ts — English display helpers for the UI (usa branch).
+ * Numbers, units, and translation of the data contract enum values.
+ * Currency is USD; the certificate index is a HERS-style score.
  */
 
 import type { Building, GestureLot } from '../types';
 import { evaluateApplicability } from '../engine';
 import type { RenovationGesture } from '../types';
 
-const nf0 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
-const nf1 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
-const nf2 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+const nf0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
-/** "12 400" */
+/** "12,400" */
 export function formatNumber(n: number): string {
   return nf0.format(Math.round(n));
 }
 
-/** "12 400 €" */
+/** "$12,400" */
 export function formatCurrency(n: number): string {
-  return `${formatNumber(n)} €`;
+  return `$${formatNumber(n)}`;
 }
 
-/** "1 733 m²" */
+/** "1,733 m²" */
 export function formatArea(n: number): string {
   return `${formatNumber(n)} m²`;
 }
 
-/** "9,3 m" */
+/** "9.3 m" */
 export function formatMeters(n: number): string {
   return `${nf1.format(n)} m`;
 }
 
-/** "0,93 W/m²K" */
+/** "0.93 W/m²K" */
 export function formatUValue(n: number): string {
   return `${nf2.format(n)} W/m²K`;
 }
 
-/** "218 kWhEP/m²/an" */
+/** "123" (HERS-style index score, unit appended by the caller) */
 export function formatEp(n: number): string {
-  return `${formatNumber(n)} kWhEP/m²/an`;
+  return `${formatNumber(n)}`;
 }
 
-/** "34 kgCO2/m²/an" */
+/** "34 kgCO2/m²/yr" */
 export function formatGes(n: number): string {
-  return `${formatNumber(n)} kgCO2/m²/an`;
+  return `${formatNumber(n)} kgCO2/m²/yr`;
 }
 
-/** "377 794 kWhEP/an" */
+/** "377,794 kWh/yr" */
 export function formatAnnualKwh(n: number): string {
-  return `${formatNumber(n)} kWhEP/an`;
+  return `${formatNumber(n)} kWh/yr`;
 }
 
-/** "58,9 tCO2/an" */
+/** "58.9 tCO2/yr" */
 export function formatAnnualGes(n: number): string {
-  return `${nf1.format(n / 1000)} tCO2/an`;
+  return `${nf1.format(n / 1000)} tCO2/yr`;
 }
 
-/** "2 160 °C.h" */
+/** "2,160 °C-h" */
 export function formatDh(n: number): string {
-  return `${formatNumber(n)} °C.h`;
+  return `${formatNumber(n)} °C-h`;
 }
 
-/** Retour sur investissement : 99 signifie hors limite. */
+/** Payback period: 99 means out of range. */
 export function formatPayback(years: number): string {
-  if (years >= 99) return '> 99 ans';
-  return `${nf1.format(years)} ans`;
+  if (years >= 99) return '> 99 years';
+  return `${nf1.format(years)} years`;
 }
 
-/** Fourchette de couts indicative, ex. "800 € à 5 000 €". */
+/** Indicative cost range, e.g. "$800 to $5,000". */
 export function formatCostRange(range: [number, number]): string {
   const [min, max] = range;
-  if (min === 0 && max === 0) return 'Gratuit';
-  if (min === 0) return `0 à ${formatCurrency(max)}`;
-  return `${formatCurrency(min)} à ${formatCurrency(max)}`;
+  if (min === 0 && max === 0) return 'Free';
+  if (min === 0) return `$0 to ${formatCurrency(max)}`;
+  return `${formatCurrency(min)} to ${formatCurrency(max)}`;
 }
 
 // ---------------------------------------------------------------------------
-// Traduction des enums
+// Enum translation
 // ---------------------------------------------------------------------------
 
 const USAGE_LABELS: Record<string, string> = {
-  residential_collective: 'Logement collectif',
-  residential_individual: 'Maison individuelle',
-  tertiary_office: 'Bureaux',
-  tertiary_school: 'École',
-  tertiary_commerce: 'Commerce',
+  residential_collective: 'Multifamily',
+  residential_individual: 'Single-family home',
+  tertiary_office: 'Office',
+  tertiary_school: 'School',
+  tertiary_commerce: 'Retail',
 };
 
 const WALL_MATERIAL_LABELS: Record<string, string> = {
-  beton: 'Béton',
-  parpaing: 'Parpaing',
-  brique: 'Brique',
-  pierre: 'Pierre',
-  bois: 'Bois',
-  'pisé': 'Pisé',
+  beton: 'Concrete',
+  parpaing: 'Concrete block (stucco)',
+  brique: 'Brick',
+  pierre: 'Stone',
+  bois: 'Wood frame',
+  'pisé': 'Adobe',
 };
 
 const WALL_INSULATION_LABELS: Record<string, string> = {
-  aucune: 'Aucune',
-  iti: 'Par l’intérieur',
-  ite: 'Par l’extérieur',
-  repartie: 'Répartie',
+  aucune: 'None',
+  iti: 'Cavity insulation',
+  ite: 'Continuous exterior insulation',
+  repartie: 'Distributed insulation',
 };
 
 const ROOF_TYPE_LABELS: Record<string, string> = {
-  terrasse: 'Toiture terrasse',
-  inclinee: 'Toiture inclinée',
+  terrasse: 'Flat roof',
+  inclinee: 'Pitched roof',
 };
 
 const GLAZING_LABELS: Record<string, string> = {
-  simple: 'Simple vitrage',
-  double: 'Double vitrage',
-  double_renouvele: 'Double vitrage renouvelé',
-  triple: 'Triple vitrage',
+  simple: 'Single pane',
+  double: 'Double pane',
+  double_renouvele: 'Low-e double pane',
+  triple: 'Triple pane',
 };
 
 const INERTIA_LABELS: Record<string, string> = {
-  legere: 'Légère',
-  moyenne: 'Moyenne',
-  lourde: 'Lourde',
+  legere: 'Light',
+  moyenne: 'Medium',
+  lourde: 'Heavy',
 };
 
 const ENERGY_LABELS: Record<string, string> = {
-  gaz_naturel: 'Gaz naturel',
-  fioul: 'Fioul',
-  electricite: 'Électricité',
-  reseau_chaleur: 'Réseau de chaleur',
-  bois: 'Bois',
-  pac: 'Pompe à chaleur',
+  gaz_naturel: 'Natural gas',
+  fioul: 'Fuel oil',
+  electricite: 'Electricity',
+  reseau_chaleur: 'District steam',
+  bois: 'Wood',
+  pac: 'Heat pump',
 };
 
 const SYSTEM_KIND_LABELS: Record<string, string> = {
-  chaudiere_gaz: 'Chaudière gaz',
-  chaudiere_gaz_condensation: 'Chaudière gaz à condensation',
-  chaudiere_fioul: 'Chaudière fioul',
-  chaudiere_bois: 'Chaudière bois',
-  pac_air_eau: 'Pompe à chaleur air/eau',
-  pac_air_air: 'Pompe à chaleur air/air',
-  radiateurs_electriques: 'Radiateurs électriques',
-  radiateurs_electriques_appoint: 'Radiateurs électriques d’appoint',
-  convecteurs_electriques: 'Convecteurs électriques',
-  poele_bois: 'Poêle à bois',
-  reseau_chaleur_urbain: 'Réseau de chaleur urbain',
-  chauffe_eau_electrique: 'Chauffe-eau électrique',
-  chauffe_eau_thermodynamique: 'Chauffe-eau thermodynamique',
-  chauffe_bain_gaz: 'Chauffe-bain gaz',
-  production_ecs_fioul: 'Production ECS au fioul',
-  ecs_reseau_chaleur: 'ECS par réseau de chaleur',
-  ballon_bois: 'Ballon bois',
+  gas_furnace: 'Gas furnace',
+  gas_furnace_condensing: 'Condensing gas furnace',
+  oil_boiler: 'Oil boiler',
+  electric_baseboard: 'Electric baseboard',
+  electric_furnace: 'Electric furnace',
+  heat_pump_ducted: 'Ducted heat pump',
+  mini_split: 'Ductless mini-split',
+  wood_stove: 'Wood stove',
+  district_steam: 'District steam',
+  gas_water_heater: 'Gas water heater',
+  tankless_gas_water_heater: 'Tankless gas water heater',
+  electric_water_heater: 'Electric water heater',
+  heat_pump_water_heater: 'Heat pump water heater',
+  oil_water_heater: 'Oil water heater',
+  district_dhw: 'District hot water',
 };
 
 const COOLING_LABELS: Record<string, string> = {
-  pac_air_air: 'Pompe à chaleur air/air réversible',
-  climatisation_centralisee: 'Climatisation centralisée',
+  pac_air_air: 'Heat pump or room AC',
+  climatisation_centralisee: 'Central air conditioning',
 };
 
 const VENTILATION_LABELS: Record<string, string> = {
-  naturelle: 'Ventilation naturelle',
-  vmc_simple_flux: 'VMC simple flux',
-  vmc_hygro: 'VMC hygroréglable',
-  vmc_double_flux: 'VMC double flux',
+  naturelle: 'Natural (operable windows)',
+  vmc_simple_flux: 'Exhaust fans (spot ventilation)',
+  vmc_hygro: 'Demand-controlled exhaust',
+  vmc_double_flux: 'Balanced ERV/HRV',
 };
 
 const LOT_LABELS: Record<GestureLot, string> = {
-  murs: 'Murs',
-  toiture: 'Toiture',
-  plancher: 'Plancher bas',
-  baies: 'Baies et vitrages',
-  protections_solaires: 'Protections solaires',
-  chauffage: 'Chauffage',
-  ecs: 'Eau chaude sanitaire',
-  refroidissement: 'Rafraîchissement',
+  murs: 'Walls',
+  toiture: 'Roof and attic',
+  plancher: 'Floor',
+  baies: 'Windows',
+  protections_solaires: 'Solar shading',
+  chauffage: 'Heating',
+  ecs: 'Water heating',
+  refroidissement: 'Cooling',
   ventilation: 'Ventilation',
-  solaire: 'Solaire',
-  usage: 'Usages',
+  solaire: 'Solar',
+  usage: 'Usage',
 };
 
 function lookup(table: Record<string, string>, key: string): string {
@@ -193,12 +192,12 @@ export const ventilationLabel = (v: string): string => lookup(VENTILATION_LABELS
 export const lotLabel = (v: GestureLot): string => LOT_LABELS[v];
 
 // ---------------------------------------------------------------------------
-// DSL partage pour les declencheurs des recommandations canicule
+// Shared DSL for heat wave recommendation triggers
 // ---------------------------------------------------------------------------
 
 /**
- * Evalue le champ `trigger` d'une recommandation canicule avec le meme DSL
- * que le filtre intelligent des gestes de renovation.
+ * Evaluates a heat wave recommendation `trigger` with the same DSL as the
+ * renovation gesture smart filter.
  */
 export function matchesTrigger(building: Building, trigger: string): boolean {
   const rule = (trigger ?? '').trim();

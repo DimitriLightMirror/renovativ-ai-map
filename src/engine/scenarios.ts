@@ -16,11 +16,12 @@ import type {
   RenovationGesture,
   ScenarioResult,
 } from '../types';
-import { GESTURES_FR } from '../content/gestures-fr';
+import { GESTURES_US } from '../content/gestures-us';
 import { finalLabel, labelFromEp, labelFromGes } from './dpe';
 
-/** Prix de l'energie utilise pour valoriser les economies, EUR/kWhEP. */
-export const ENERGY_PRICE_EUR_PER_KWH = 0.15;
+/** Energy price used to value savings. Expressed in country currency per kWh:
+ * 0.16 USD/kWh on the usa branch (blended US residential average). */
+export const ENERGY_PRICE_EUR_PER_KWH = 0.16;
 
 /** Plafond de reduction combinee (90 %) pour eviter les valeurs irrealistes. */
 export const MAX_COMBINED_REDUCTION = 0.9;
@@ -117,14 +118,14 @@ export function evaluateApplicability(
     if (rawCond.trim() === '') continue;
     const cond = parseCondition(rawCond);
     if (!cond) {
-      return { applicable: false, reason: `Règle inconnue : ${rawCond.trim()}` };
+      return { applicable: false, reason: `Unknown rule: ${rawCond.trim()}` };
     }
     if (!evalCondition(building, cond)) {
       const actual = readPath(building, cond.path);
-      const shown = actual === undefined || actual === null ? 'absent' : String(actual);
+      const shown = actual === undefined || actual === null ? 'missing' : String(actual);
       return {
         applicable: false,
-        reason: `Condition non remplie : ${cond.raw} (valeur actuelle : ${shown})`,
+        reason: `Condition not met: ${cond.raw} (current value: ${shown})`,
       };
     }
   }
@@ -249,9 +250,9 @@ export function rankGestures(
   building: Building,
   objective: OptimizationObjective,
 ): ScenarioResult[] {
-  const results: ScenarioResult[] = GESTURES_FR.map((gesture) => {
+  const results: ScenarioResult[] = GESTURES_US.map((gesture) => {
     const check = evaluateApplicability(building, gesture);
-    const impact = combineWithRequires(building, gesture, GESTURES_FR);
+    const impact = combineWithRequires(building, gesture, GESTURES_US);
 
     const newEp = building.certificate.ep * (1 - impact.epSavingPct);
     const newGes = building.certificate.ges * (1 - impact.gesSavingPct);

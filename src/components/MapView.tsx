@@ -23,10 +23,10 @@ interface MapViewProps {
 }
 
 const COMFORT_LEGEND: { color: string; label: string }[] = [
-  { color: '#2E9E5B', label: 'Confortable' },
-  { color: '#E3C41C', label: 'Inconfort modéré' },
-  { color: '#E8842C', label: 'Inconfort fort' },
-  { color: '#D0342C', label: 'Inconfort sévère' },
+  { color: '#2E9E5B', label: 'Comfortable' },
+  { color: '#E3C41C', label: 'Moderate discomfort' },
+  { color: '#E8842C', label: 'High discomfort' },
+  { color: '#D0342C', label: 'Severe discomfort' },
 ];
 
 const DPE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
@@ -37,8 +37,8 @@ function markerColor(building: Building, mode: MapColorMode): string {
 }
 
 /**
- * Carte Leaflet du parc bati francais.
- * Coloration par etiquette DPE ou par confort d'ete a l'horizon 2050.
+ * Leaflet map of the US building stock.
+ * Colored by HERS band or by summer comfort at the 2050 horizon.
  */
 export default function MapView({
   buildings,
@@ -129,27 +129,27 @@ export default function MapView({
 
   return (
     <>
-      <div ref={containerRef} className="map-leaflet" aria-label="Carte du parc bâti français" />
+      <div ref={containerRef} className="map-leaflet" aria-label="Map of the US building stock" />
 
       <div className="map-controls card">
-        <div className="map-controls__toggle" role="group" aria-label="Coloration de la carte">
+        <div className="map-controls__toggle" role="group" aria-label="Map coloring">
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'dpe' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('dpe')}
           >
-            DPE
+            HERS
           </button>
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'comfort' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('comfort')}
           >
-            Confort d’été
+            Summer comfort
           </button>
         </div>
 
-        <div className="map-legend" aria-label="Légende de la carte">
+        <div className="map-legend" aria-label="Map legend">
           {colorMode === 'dpe'
             ? DPE_LABELS.map((label) => (
                 <span key={label} className="map-legend__item">
@@ -170,7 +170,7 @@ export default function MapView({
                 </span>
               ))}
           {colorMode === 'comfort' && (
-            <span className="map-legend__note">Horizon 2050</span>
+            <span className="map-legend__note">2050 horizon</span>
           )}
         </div>
 
@@ -180,23 +180,26 @@ export default function MapView({
           aria-expanded={infoOpen}
           onClick={() => setInfoOpen((v) => !v)}
         >
-          {infoOpen ? 'Masquer l’explication' : 'Pour en savoir plus'}
+          {infoOpen ? 'Hide explanation' : 'Learn more'}
         </button>
 
         {infoOpen && (
           <div className="map-info">
             {colorMode === 'dpe' ? (
               <p>
-                Le DPE classe chaque bâtiment de A à G selon sa consommation
-                d’énergie primaire et ses émissions de CO2. La classe retenue
-                est la moins bonne des deux. G signale une passoire thermique.
+                The HERS-style index rates each building from A to G. A score of
+                100 matches the 2006 IECC reference new home and 0 is net zero;
+                most existing homes score 120 to 150. The band also accounts
+                for greenhouse gas emissions, and G flags the least efficient
+                buildings.
               </p>
             ) : (
               <p>
-                Le confort d’été mesure les degrés-heures d’inconfort : le cumul
-                des dépassements de température intérieure pendant la saison
-                chaude, sans climatisation. Ici, la projection tient compte du
-                réchauffement attendu en 2050 et de l’îlot de chaleur urbain.
+                Summer comfort is measured in degree-hours of indoor
+                overheating: the cumulative excess of indoor temperature over
+                the comfort threshold during the hot season, without air
+                conditioning. The projection includes expected warming by 2050
+                and the urban heat island effect.
               </p>
             )}
           </div>
