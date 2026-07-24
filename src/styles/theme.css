@@ -40,14 +40,16 @@
   --color-header-bg: var(--color-deep-green);
   --color-header-text: #f4f1e9;
 
-  /* Official French DPE A-to-G ramp (green to red) */
-  --dpe-a: #319834;
-  --dpe-b: #33cc31;
-  --dpe-c: #cbfc34;
-  --dpe-d: #fbfe06;
-  --dpe-e: #fbcc0a;
-  --dpe-f: #fb9c06;
-  --dpe-g: #fa0206;
+  /* Official Dutch energielabel A+++..G ramp (dark green to red).
+     Class A below covers the official A+++, A++ and A+ classes.
+     Class names stay dpe-a..dpe-g on the shared A..G contract. */
+  --dpe-a: #0a7d33;
+  --dpe-b: #4ab03a;
+  --dpe-c: #a6c835;
+  --dpe-d: #f6d511;
+  --dpe-e: #f0a41a;
+  --dpe-f: #e36a1b;
+  --dpe-g: #d1231f;
 
   /* Summer comfort ramp */
   --comfort-green: #319834;
@@ -258,7 +260,8 @@ button {
 }
 
 /* --------------------------------------------------------------------------
-   DPE badges — official French A-to-G green-to-red ramp
+   Energielabel badges — official Dutch A+++..G dark-green-to-red ramp,
+   collapsed onto A..G (class A covers A+++ / A++ / A+)
    -------------------------------------------------------------------------- */
 
 .dpe-badge {

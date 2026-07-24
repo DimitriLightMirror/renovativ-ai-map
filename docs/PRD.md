@@ -162,3 +162,70 @@ Branches: `main` (France) → `uk`, `usa`.
 | 3 simulations parallèles (bâtiment, RDC, dernier étage) | V2 §4.2 |
 | Résultats synthèse/détaillé, scénarios CRUD, base de gestes, cohérence solaire | V2 §4.2 |
 | Météo 2025, projections 2050/2100 (DRIAS) | §3.2 |
+
+---
+
+## 11. 4th Branch: Netherlands
+
+Branch `netherlands` adapts the app to the Dutch building stock with real
+open data and Dutch regulation, without touching the shared contract
+`src/types/index.ts`.
+
+### Data sources
+
+1. **EP-online client (runtime, key required)** — `src/api/epOnline.ts`
+   wraps the overheid.io v3 API (`https://api.overheid.io/v3/energielabels`),
+   the public wrapper over the RVO EP-online database. Methods: search by
+   postcode, fetch by BAG building id (bagVerblijfsobjectId) or slug, and a
+   lat/lon radius search returning GeoJSON-ish features (postcodes resolved
+   through the keyless PDOK Locatieserver, then haversine-filtered on the
+   `locatie` field). The API key comes from
+   `import.meta.env.VITE_EPONLINE_API_KEY` (see `.env.example`). No key is
+   bundled; the client is for runtime use once a key is configured.
+2. **Bundled demo dataset (keyless, real)** — `scripts/fetch-netherlands.mjs`
+   pulls ~8000 real buildings (quota 2000 per city: Amsterdam, Rotterdam,
+   Den Haag, Utrecht) from the **PDOK BAG WFS v2.0**
+   (`https://service.pdok.nl/lv/bag/wfs/v2_0`): `bag:pand` (footprints,
+   bouwjaar, gebruiksdoel) joined to `bag:verblijfsobject` (real addresses,
+   postcodes, unit areas) on `pandidentificatie`.
+3. **Energielabels: estimated, and why** — RVO publishes EP-online dumps
+   (totaalbestand/mutatiebestanden) but they require an API key; no keyless
+   energielabel source exists. Labels are therefore modelled from
+   bouwjaar-era Dutch archetypes (rijtjeshuizen, pre-war portiekflats,
+   post-war galerijflats, vrijstaand) plus a modelled ~60% retrofit share on
+   pre-1992 homes, and are clearly marked as estimated in code comments, the
+   README and the UI. The official Dutch A+++..G scale is collapsed onto the
+   shared A..G contract (A+++/A++/A+ → 'A').
+
+### Reprojection (EPSG:28992 → WGS84)
+
+BAG geometry is RD New (Amersfoort datum). Centroids and footprint areas are
+computed in RD meters (shoelace), then reprojected with proj4 using the
+official 7-parameter towgs84 definition. The transform is validated before
+any mass conversion on a known Dam Square point (Royal Palace,
+RD 121357,487373 → lat 52.3731, lng 4.8932; same discipline as the French
+Lambert-93 pipeline), and the run aborts if validation fails or if more than
+1% of buildings fall outside Dutch bounds (0 out-of-bounds on the shipped
+run).
+
+### Regulation references (`src/content/regulation-nl.ts`)
+
+BEG (Besluit energieprestatie gebouwen, EPBD implementation, RVO/EP-online),
+BENG 1/2/3 for new builds and major renovations, Trias Energetica renovation
+philosophy, minimum energielabel C for rental homes by 2030 (E/F/G flagged
+below target, the passoire thermique equivalent), TOjuli overheating metric
+from NTA 8800 (no national comfort indicator for the existing stock, so
+degree-hours shown are a modelled proxy), ISDE and SVV subsidy schemes.
+Official URLs: rvo.nl, rijksoverheid.nl, wetten.overheid.nl.
+
+### Pricing methodology
+
+Gesture costs (`src/content/gestures-nl.ts`) are indicative 2025 EUR figures
+anchored on ISDE/SVV subsidy reference ranges where possible (spouwmuur
+20-35 €/m2, dak 40-70 €/m2, vloer 25-45 €/m2, HR++ 80-150 €/m2, triple
+150-250 €/m2, gevel 90-140 €/m2, warmtepomp 6000-12000 €, hybride
+4000-7000 €, zonnepanelen 200-300 €/m2, zonneboiler 3000-5000 €, WTW
+3000-5500 €); all other figures are marked as approximations pending
+verified pricing. The blended energy price used for savings is 0.25
+EUR/kWhEP (Dutch 2024-2025 level). The Renovation tab states explicitly
+that pricing is indicative and not a live market quote.

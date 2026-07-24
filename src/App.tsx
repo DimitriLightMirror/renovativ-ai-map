@@ -9,8 +9,8 @@ import { formatNumber } from './utils/format';
 const logoUrl = `${import.meta.env.BASE_URL}brand/logo-terracotta.png`;
 
 /**
- * Coquille applicative : en-tete, carte plein ecran, panneau de diagnostic
- * et pied de page statistiques. La selection du batiment vit ici.
+ * Application shell: header, full-screen map, diagnostic panel and
+ * statistics footer. The selected building lives here.
  */
 export default function App() {
   const buildings = useMemo(() => getBuildings(), []);
@@ -32,14 +32,15 @@ export default function App() {
     }));
   }, []);
 
-  const fgCount = stats.perLabel.F + stats.perLabel.G;
-  const fgPct = Math.round((fgCount / stats.total) * 100);
+  // Below the 2030 rental target: energielabel E, F or G.
+  const belowCCount = stats.perLabel.E + stats.perLabel.F + stats.perLabel.G;
+  const belowCPct = Math.round((belowCCount / stats.total) * 100);
 
   return (
     <div className="app">
       <header className="app-header">
         <img className="app-header__logo" src={logoUrl} alt="Renovativ" />
-        <h1 className="app-header__title">Renovativ AI Map</h1>
+        <h1 className="app-header__title">Renovativ AI Map · Netherlands</h1>
         <SearchBar onPick={handleSearchPick} />
       </header>
 
@@ -55,15 +56,15 @@ export default function App() {
 
         <BuildingPanel building={selected} onClose={() => setSelected(null)} />
 
-        <footer className="stats-bar" aria-label="Statistiques du parc">
+        <footer className="stats-bar" aria-label="Building stock statistics">
           <span className="stats-bar__chip">
-            {formatNumber(stats.total)} bâtiments cartographiés
+            {formatNumber(stats.total)} buildings mapped
           </span>
           <span className="stats-bar__chip">
-            {Object.keys(stats.perCity).length} communes
+            {Object.keys(stats.perCity).length} cities
           </span>
           <span className="stats-bar__chip stats-bar__chip--alert">
-            {fgPct} % classés F ou G
+            {belowCPct} % below label C (E/F/G)
           </span>
         </footer>
       </main>

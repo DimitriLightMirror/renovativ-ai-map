@@ -16,11 +16,15 @@ import type {
   RenovationGesture,
   ScenarioResult,
 } from '../types';
-import { GESTURES_FR } from '../content/gestures-fr';
+import { GESTURES_NL } from '../content/gestures-nl';
 import { finalLabel, labelFromEp, labelFromGes } from './dpe';
 
-/** Prix de l'energie utilise pour valoriser les economies, EUR/kWhEP. */
-export const ENERGY_PRICE_EUR_PER_KWH = 0.15;
+/**
+ * Blended Dutch household energy price used to value savings, EUR/kWhEP.
+ * ~0.25 EUR/kWh reflects the 2024-2025 Dutch mix of gas and electricity
+ * retail prices (blended across heating-dominated consumption).
+ */
+export const ENERGY_PRICE_EUR_PER_KWH = 0.25;
 
 /** Plafond de reduction combinee (90 %) pour eviter les valeurs irrealistes. */
 export const MAX_COMBINED_REDUCTION = 0.9;
@@ -249,9 +253,9 @@ export function rankGestures(
   building: Building,
   objective: OptimizationObjective,
 ): ScenarioResult[] {
-  const results: ScenarioResult[] = GESTURES_FR.map((gesture) => {
+  const results: ScenarioResult[] = GESTURES_NL.map((gesture) => {
     const check = evaluateApplicability(building, gesture);
-    const impact = combineWithRequires(building, gesture, GESTURES_FR);
+    const impact = combineWithRequires(building, gesture, GESTURES_NL);
 
     const newEp = building.certificate.ep * (1 - impact.epSavingPct);
     const newGes = building.certificate.ges * (1 - impact.gesSavingPct);

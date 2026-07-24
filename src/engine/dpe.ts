@@ -1,28 +1,46 @@
 /**
- * dpe.ts — etiquettes DPE 2021 (arrete du 31 mars 2021).
- * Echelle A..G sur l'energie primaire (kWhEP/m2/an) et les GES (kgCO2/m2/an).
- * L'etiquette finale est la plus defavorable des deux.
+ * dpe.ts — Dutch energielabel scale (branch `netherlands`).
+ *
+ * The official Dutch energielabel runs from A+++ (best) to G (worst) and is
+ * based on energy performance only (NTA 8800: energy demand, primary fossil
+ * energy, renewable share). There is NO separate CO2 label in the Dutch
+ * system, unlike the French DPE.
+ *
+ * Mapping onto the shared A..G EnergyLabel contract (src/types/index.ts is
+ * read-only): A+++, A++, A+ and A all collapse onto class 'A'; B..G map
+ * one-to-one. The EP thresholds below approximate the Dutch energy-index
+ * boundaries expressed in kWhEP/m2/yr (EI 1.0 is roughly 100-110 kWh/m2):
+ *   A (incl. A+/A++/A+++) <= 120, B <= 165, C <= 205, D <= 250,
+ *   E <= 300, F <= 360, G > 360.
+ *
+ * The GES thresholds are calibrated so that the worst-of convention below
+ * (kept from the shared engine for app compatibility) tracks the EP-based
+ * Dutch label for the gas-dominated Dutch stock: they are the EP bounds
+ * multiplied by the Dutch natural gas content (~0.21 kgCO2/kWhEP).
  */
 
 import type { EnergyLabel } from '../types';
 
 const LABELS: EnergyLabel[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-/** Seuils hauts par etiquette, kWhEP/m2/an (au-dela => etiquette suivante). */
-const EP_THRESHOLDS: readonly number[] = [70, 110, 180, 250, 330, 420];
+/** Upper bounds per label, kWhEP/m2/yr (above => next label). Dutch mapping. */
+const EP_THRESHOLDS: readonly number[] = [120, 165, 205, 250, 300, 360];
 
-/** Seuils hauts par etiquette, kgCO2/m2/an. */
-const GES_THRESHOLDS: readonly number[] = [6, 11, 30, 50, 70, 100];
+/** Upper bounds per label, kgCO2/m2/yr (gas-calibrated, see header). */
+const GES_THRESHOLDS: readonly number[] = [25, 35, 43, 53, 63, 76];
 
-/** Couleurs officielles de l'echelle DPE, de A (vert) a G (rouge). */
+/**
+ * Display colors following the official Dutch energielabel ramp, dark green
+ * (A, covering A++/A+/A) to red (G). Class names in CSS stay dpe-a..dpe-g.
+ */
 const LABEL_COLORS: Record<EnergyLabel, string> = {
-  A: '#319834',
-  B: '#33CC31',
-  C: '#CBFC34',
-  D: '#FBFE06',
-  E: '#FBCC0C',
-  F: '#FC9935',
-  G: '#FD0205',
+  A: '#0a7d33',
+  B: '#4ab03a',
+  C: '#a6c835',
+  D: '#f6d511',
+  E: '#f0a41a',
+  F: '#e36a1b',
+  G: '#d1231f',
 };
 
 function labelFromThresholds(value: number, thresholds: readonly number[]): EnergyLabel {
@@ -32,32 +50,36 @@ function labelFromThresholds(value: number, thresholds: readonly number[]): Ener
   return 'G';
 }
 
-/** Etiquette energie primaire pour une consommation en kWhEP/m2/an. */
+/** Energy label for a consumption in kWhEP/m2/yr (Dutch scale). */
 export function labelFromEp(ep: number): EnergyLabel {
   return labelFromThresholds(ep, EP_THRESHOLDS);
 }
 
-/** Etiquette GES pour des emissions en kgCO2/m2/an. */
+/** CO2 label for emissions in kgCO2/m2/yr (engine parity, see header). */
 export function labelFromGes(ges: number): EnergyLabel {
   return labelFromThresholds(ges, GES_THRESHOLDS);
 }
 
-/** Rang numerique d'une etiquette : A = 0 ... G = 6. */
+/** Numeric rank of a label: A = 0 ... G = 6. */
 export function labelRank(label: EnergyLabel): number {
   return LABELS.indexOf(label);
 }
 
-/** Etiquette finale DPE : la plus defavorable entre energie et GES. */
+/**
+ * Final label: the worst of energy and CO2. Kept for engine compatibility;
+ * with the gas-calibrated GES thresholds this coincides with the EP-based
+ * Dutch label for the dominant gas-heated stock.
+ */
 export function finalLabel(epLabel: EnergyLabel, gesLabel: EnergyLabel): EnergyLabel {
   return labelRank(epLabel) >= labelRank(gesLabel) ? epLabel : gesLabel;
 }
 
-/** Etiquette finale calculee directement depuis les indicateurs. */
+/** Final label computed directly from the indicators. */
 export function labelFromIndicators(ep: number, ges: number): EnergyLabel {
   return finalLabel(labelFromEp(ep), labelFromGes(ges));
 }
 
-/** Couleur d'affichage (echelle officielle DPE). */
+/** Display color (official Dutch dark-green-to-red ramp). */
 export function labelColor(label: EnergyLabel): string {
   return LABEL_COLORS[label];
 }

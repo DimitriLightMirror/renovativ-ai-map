@@ -15,20 +15,20 @@ interface BuildingPanelProps {
 type TabKey = 'characteristics' | 'dpe' | 'renovation' | 'heatwave';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'characteristics', label: 'Caractéristiques' },
+  { key: 'characteristics', label: 'Characteristics' },
   { key: 'dpe', label: COUNTRY.certificateName },
-  { key: 'renovation', label: 'Rénovation' },
-  { key: 'heatwave', label: 'Canicule' },
+  { key: 'renovation', label: 'Renovation' },
+  { key: 'heatwave', label: 'Heatwave' },
 ];
 
 /**
- * Panneau lateral droit : diagnostic du batiment selectionne,
- * quatre onglets (caracteristiques, DPE, renovation, canicule).
+ * Right-hand side panel: diagnostic of the selected building,
+ * four tabs (characteristics, Energielabel, renovation, heatwave).
  */
 export default function BuildingPanel({ building, onClose }: BuildingPanelProps) {
   const [tab, setTab] = useState<TabKey>('characteristics');
 
-  // Retour au premier onglet quand on change de batiment.
+  // Back to the first tab when the building changes.
   useEffect(() => {
     setTab('characteristics');
   }, [building?.id]);
@@ -36,7 +36,7 @@ export default function BuildingPanel({ building, onClose }: BuildingPanelProps)
   return (
     <aside
       className={`detail-panel ${building ? 'is-open' : ''}`}
-      aria-label="Diagnostic du bâtiment"
+      aria-label="Building diagnostic"
       aria-hidden={!building}
     >
       {building && (
@@ -44,7 +44,7 @@ export default function BuildingPanel({ building, onClose }: BuildingPanelProps)
           <button
             type="button"
             className="detail-panel__close"
-            aria-label="Fermer le panneau"
+            aria-label="Close the panel"
             onClick={onClose}
           >
             ×
@@ -57,7 +57,7 @@ export default function BuildingPanel({ building, onClose }: BuildingPanelProps)
             </p>
           </header>
 
-          <nav className="tab-bar" aria-label="Onglets du diagnostic">
+          <nav className="tab-bar" aria-label="Diagnostic tabs">
             {TABS.map((t) => (
               <button
                 key={t.key}

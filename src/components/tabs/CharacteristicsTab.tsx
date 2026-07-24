@@ -28,7 +28,7 @@ function Group({ title, rows }: { title: string; rows: Row[] }) {
   return (
     <section className="detail-panel__section">
       <h3>
-        {title} <span className="source-tag">Source : BDNB</span>
+        {title} <span className="source-tag">Source: BAG / PDOK</span>
       </h3>
       <dl className="card kv-list">
         {rows.map((row) => (
@@ -43,12 +43,12 @@ function Group({ title, rows }: { title: string; rows: Row[] }) {
 }
 
 function describeSystem(kind: string, energy: string, ageYears: number): string {
-  return `${systemKindLabel(kind)} (${energyLabel(energy)}, ${ageYears} an${
+  return `${systemKindLabel(kind)} (${energyLabel(energy)}, ${ageYears} yr${
     ageYears > 1 ? 's' : ''
   })`;
 }
 
-/** Onglet Caracteristiques : general, enveloppe, systemes. */
+/** Characteristics tab: general, envelope, systems. */
 export default function CharacteristicsTab({ building }: CharacteristicsTabProps) {
   const b = building;
   const e = b.envelope;
@@ -57,72 +57,72 @@ export default function CharacteristicsTab({ building }: CharacteristicsTabProps
   return (
     <>
       <Group
-        title="Général"
+        title="General"
         rows={[
-          { label: 'Adresse', value: `${b.address}, ${b.postcode} ${b.city}` },
-          { label: 'Identifiant BDNB', value: b.nationalDbId },
-          { label: 'Identifiant RNB', value: b.registryId },
+          { label: 'Address', value: `${b.address}, ${b.postcode} ${b.city}` },
+          { label: 'BAG pand ID', value: b.nationalDbId },
+          { label: 'BAG verblijfsobject ID', value: b.registryId || 'n/a' },
           { label: 'Usage', value: usageLabel(b.usage) },
-          { label: 'Année de construction', value: String(b.constructionYear) },
-          { label: 'Surface de plancher', value: formatArea(b.livingAreaM2) },
-          { label: 'Niveaux', value: String(b.floors) },
-          { label: 'Hauteur', value: formatMeters(b.heightM) },
-          { label: 'Logements', value: b.housingUnits > 0 ? String(b.housingUnits) : 'Sans objet' },
+          { label: 'Construction year (bouwjaar)', value: String(b.constructionYear) },
+          { label: 'Floor area', value: formatArea(b.livingAreaM2) },
+          { label: 'Floors', value: String(b.floors) },
+          { label: 'Height', value: formatMeters(b.heightM) },
+          { label: 'Dwellings', value: b.housingUnits > 0 ? String(b.housingUnits) : 'n/a' },
         ]}
       />
 
       <Group
-        title="Enveloppe"
+        title="Envelope"
         rows={[
           {
-            label: 'Murs',
-            value: `${wallMaterialLabel(e.wallMaterial)}, isolation ${wallInsulationLabel(
+            label: 'Walls',
+            value: `${wallMaterialLabel(e.wallMaterial)}, insulation ${wallInsulationLabel(
               e.wallInsulation,
-            ).toLowerCase()} (${formatUValue(e.uWall)})`,
+            )} (${formatUValue(e.uWall)})`,
           },
-          { label: 'Toiture', value: `${roofTypeLabel(e.roofType)} (${formatUValue(e.uRoof)})` },
-          { label: 'Plancher bas', value: formatUValue(e.uFloor) },
+          { label: 'Roof', value: `${roofTypeLabel(e.roofType)} (${formatUValue(e.uRoof)})` },
+          { label: 'Ground floor', value: formatUValue(e.uFloor) },
           {
-            label: 'Baies et vitrage',
-            value: `${glazingLabel(e.glazingType)}, ${Math.round(e.glazingRatio * 100)} % de surface vitrée`,
+            label: 'Windows & glazing',
+            value: `${glazingLabel(e.glazingType)}, ${Math.round(e.glazingRatio * 100)} % glazed`,
           },
           {
-            label: 'Protections solaires',
-            value: e.solarProtection ? 'Présentes' : 'Absentes',
+            label: 'Solar shading (zonwering)',
+            value: e.solarProtection ? 'Present' : 'Absent',
           },
-          { label: 'Inertie', value: inertiaLabel(e.inertia) },
+          { label: 'Thermal inertia', value: inertiaLabel(e.inertia) },
         ]}
       />
 
       <Group
-        title="Systèmes"
+        title="Systems"
         rows={[
           {
-            label: 'Chauffage principal',
+            label: 'Main heating',
             value: describeSystem(s.heating.kind, s.heating.energy, s.heating.ageYears),
           },
           {
-            label: 'Chauffage secondaire',
+            label: 'Secondary heating',
             value: s.heatingSecondary
               ? describeSystem(
                   s.heatingSecondary.kind,
                   s.heatingSecondary.energy,
                   s.heatingSecondary.ageYears,
                 )
-              : 'Aucun',
+              : 'None',
           },
           {
-            label: 'Eau chaude sanitaire',
+            label: 'Hot water',
             value: describeSystem(s.dhw.kind, s.dhw.energy, s.dhw.ageYears),
           },
           {
-            label: 'Refroidissement',
-            value: s.cooling ? coolingLabel(s.cooling) : 'Aucun',
+            label: 'Cooling',
+            value: s.cooling ? coolingLabel(s.cooling) : 'None',
           },
           { label: 'Ventilation', value: ventilationLabel(s.ventilation) },
           {
-            label: 'Photovoltaïque',
-            value: s.pvSurfaceM2 > 0 ? formatArea(s.pvSurfaceM2) : 'Aucun',
+            label: 'Rooftop PV (zonnepanelen)',
+            value: s.pvSurfaceM2 > 0 ? formatArea(s.pvSurfaceM2) : 'None',
           },
         ]}
       />

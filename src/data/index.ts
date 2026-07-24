@@ -1,26 +1,33 @@
 /**
- * Renovativ AI Map — typed loader for the real BDNB dataset.
+ * Renovativ AI Map — typed loader for the Dutch dataset (branch `netherlands`).
  *
- * The dataset is produced by scripts/ingest-bdnb.mjs from the BDNB open-data
- * export of department 06 (Alpes-Maritimes), Licence Ouverte 2.0, and conforms
- * to the Building interface defined in src/types/index.ts.
+ * The dataset is produced by scripts/fetch-netherlands.mjs from the PDOK BAG
+ * (Basisregistratie Adressen en Gebouwen) WFS v2.0, keyless national open
+ * data: ~8000 real buildings across Amsterdam, Rotterdam, Den Haag and
+ * Utrecht, reprojected from RD New (EPSG:28992) to WGS84.
+ *
+ * IMPORTANT: every energielabel in this dataset is ESTIMATED, modelled from
+ * bouwjaar-era Dutch archetypes, because EP-online (RVO) requires an API key
+ * and no keyless energielabel source exists. Live per-address labels can be
+ * fetched at runtime through src/api/epOnline.ts once a key is configured.
+ * The data conforms to the Building interface in src/types/index.ts.
  *
  * No runtime dependencies: pure TypeScript over the bundled JSON.
  */
 
 import type { Building, EnergyLabel } from '../types';
-import buildingsJson from './buildings-fr.json';
+import buildingsJson from './buildings-nl.json';
 
 const BUILDINGS: Building[] = buildingsJson as unknown as Building[];
 
 const SEARCH_LIMIT = 20;
 
-/** Lowercase + strip accents so "Rivoli", "rivoli" and "république"/"republique" all match. */
+/** Lowercase + strip accents so "Den Haag", "den haag" and "'s-Gravenhage" all match. */
 function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[̀-ͯ]/g, '');
 }
 
 export interface DataStats {
@@ -40,7 +47,7 @@ export function getBuildingById(id: string): Building | undefined {
 
 /**
  * Substring search on address, city and postcode.
- * Case- and accent-insensitive, capped at 20 results.
+ * Case-insensitive, capped at 20 results.
  */
 export function searchBuildings(query: string): Building[] {
   const q = normalize(query.trim());
@@ -50,7 +57,7 @@ export function searchBuildings(query: string): Building[] {
     if (
       normalize(b.address).includes(q) ||
       normalize(b.city).includes(q) ||
-      b.postcode.includes(q)
+      b.postcode.includes(q.toUpperCase())
     ) {
       results.push(b);
       if (results.length >= SEARCH_LIMIT) break;
@@ -59,7 +66,7 @@ export function searchBuildings(query: string): Building[] {
   return results;
 }
 
-/** Counts per DPE label (A to G) and per city, for the map legend and dashboards. */
+/** Counts per energielabel (A to G) and per city, for the map legend and dashboards. */
 export function getStats(): DataStats {
   const perLabel: Record<EnergyLabel, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0 };
   const perCity: Record<string, number> = {};

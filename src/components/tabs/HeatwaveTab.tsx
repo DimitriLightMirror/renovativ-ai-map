@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import type { Building, HeatwaveRecommendation } from '../../types';
 import { comfortForHorizons } from '../../engine';
-import { HEATWAVE_RECS_FR } from '../../content/heatwave-fr';
-import { REGULATION_FR } from '../../content/regulation-fr';
+import { HEATWAVE_RECS_NL } from '../../content/heatwave-nl';
+import { REGULATION_NL } from '../../content/regulation-nl';
 import RegulationCard from '../RegulationCard';
 import {
   coolingLabel,
@@ -22,24 +22,24 @@ const PRIORITY_ORDER: Record<HeatwaveRecommendation['priority'], number> = {
 };
 
 const PRIORITY_LABELS: Record<HeatwaveRecommendation['priority'], string> = {
-  essentiel: 'Essentiel',
-  recommande: 'Recommandé',
-  optionnel: 'Optionnel',
+  essentiel: 'Essential',
+  recommande: 'Recommended',
+  optionnel: 'Optional',
 };
 
-/** Onglet Canicule : confort d'ete a trois horizons et preparation. */
+/** Heatwave tab: summer comfort at three horizons and preparation. */
 export default function HeatwaveTab({ building }: HeatwaveTabProps) {
   const horizons = comfortForHorizons(building);
 
   const recs = useMemo(
     () =>
-      HEATWAVE_RECS_FR.filter((r) => matchesTrigger(building, r.trigger)).sort(
+      HEATWAVE_RECS_NL.filter((r) => matchesTrigger(building, r.trigger)).sort(
         (a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority],
       ),
     [building],
   );
 
-  const items = REGULATION_FR.filter((r) => r.relevance.includes('heatwave'));
+  const items = REGULATION_NL.filter((r) => r.relevance.includes('heatwave'));
 
   const bubbles = [
     { year: '2025', dh: building.comfort.dh2025, c: horizons.h2025 },
@@ -50,7 +50,7 @@ export default function HeatwaveTab({ building }: HeatwaveTabProps) {
   return (
     <>
       <section className="detail-panel__section">
-        <h3>Confort d’été à trois horizons</h3>
+        <h3>Summer comfort at three horizons</h3>
         <div className="comfort-row">
           {bubbles.map((b) => (
             <div key={b.year} className="comfort-cell">
@@ -69,21 +69,23 @@ export default function HeatwaveTab({ building }: HeatwaveTabProps) {
           ))}
         </div>
         <p className="note">
-          Degrés-heures d’inconfort par été, sans climatisation. Les projections
-          2050 et 2100 tiennent compte du réchauffement et de l’îlot de chaleur
-          urbain.
+          Modelled degree-hours of summer discomfort per year, without cooling.
+          The 2050 and 2100 projections include climate warming and the urban
+          heat island. Dutch regulation measures overheating with TOjuli
+          (NTA 8800); these degree-hours are a modelled proxy, not a legal
+          indicator.
         </p>
         {building.systems.cooling && (
           <p className="note note--cooling">
-            Ce bâtiment dispose déjà d’un refroidissement :{' '}
-            {coolingLabel(building.systems.cooling)}. Les mesures passives
-            restent prioritaires pour limiter la consommation.
+            This building already has cooling:{' '}
+            {coolingLabel(building.systems.cooling)}. Passive measures remain
+            the priority to limit consumption.
           </p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Préparation aux canicules</h3>
+        <h3>Heatwave preparation</h3>
         {recs.length > 0 ? (
           recs.map((rec) => (
             <article key={rec.id} className="card heatwave-card">
@@ -95,17 +97,17 @@ export default function HeatwaveTab({ building }: HeatwaveTabProps) {
               </header>
               <p>{rec.description}</p>
               <p className="heatwave-card__cost">
-                Coût indicatif : {formatCostRange(rec.indicativeCostEUR)}
+                Indicative cost: {formatCostRange(rec.indicativeCostEUR)}
               </p>
             </article>
           ))
         ) : (
-          <p className="note">Ce bâtiment est déjà bien préparé aux épisodes chauds.</p>
+          <p className="note">This building is already well prepared for hot spells.</p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Réglementation applicable</h3>
+        <h3>Applicable regulation</h3>
         {items.map((item) => (
           <RegulationCard key={item.key} item={item} />
         ))}

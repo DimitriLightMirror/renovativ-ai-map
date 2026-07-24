@@ -8,7 +8,7 @@
     "build": "vite build",
     "typecheck": "tsc -b",
     "preview": "vite preview",
-    "ingest:bdnb": "node scripts/ingest-bdnb.mjs ../BDNB/csv"
+    "fetch:nl": "node scripts/fetch-netherlands.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

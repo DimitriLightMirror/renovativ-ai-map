@@ -4,14 +4,14 @@ interface RegulationCardProps {
   item: RegulationItem;
 }
 
-/** Carte compacte d'un texte reglementaire. */
+/** Compact card for one regulation item. */
 export default function RegulationCard({ item }: RegulationCardProps) {
   return (
     <article className="card regulation-card">
       <h4 className="regulation-card__title">{item.title}</h4>
       <p className="regulation-card__summary">{item.summary}</p>
       <p className="regulation-card__meta">
-        {item.obligations.length} obligation{item.obligations.length > 1 ? 's' : ''} clé
+        {item.obligations.length} key obligation{item.obligations.length > 1 ? 's' : ''}
       </p>
       <a
         className="regulation-card__link"
@@ -19,7 +19,7 @@ export default function RegulationCard({ item }: RegulationCardProps) {
         target="_blank"
         rel="noreferrer"
       >
-        Source officielle
+        Official source
       </a>
     </article>
   );

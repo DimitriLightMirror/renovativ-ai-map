@@ -1,69 +1,81 @@
-# Renovativ AI Map
+# Renovativ AI Map · Netherlands
 
-Carte publique et interactive du parc bâti : diagnostic énergétique (DPE en France),
-scénarios de rénovation chiffrés et préparation aux canicules, à l'échelle du bâtiment.
-Modèle de données inspiré de la BDNB (Base de Données Nationale des Bâtiments, CSTB).
-
-Voir le cahier des charges complet : [docs/PRD.md](docs/PRD.md).
+Interactive public map of the Dutch building stock: energy diagnosis
+(Energielabel), costed renovation scenarios and heatwave preparation, at
+building level. English UI with Dutch domain terms. See the full product
+requirements in [docs/PRD.md](docs/PRD.md).
 
 ## Stack
 
-React 18 · TypeScript · Vite · Leaflet · hébergement statique GitHub Pages.
+React 18 · TypeScript · Vite · Leaflet · static hosting on GitHub Pages.
 
 ## Scripts
 
 ```bash
-npm install          # installer les dépendances
-npm run dev          # serveur de développement
-npm run build        # vérification TypeScript + build de production (dist/)
-npm run preview      # prévisualiser le build
-npm run ingest:bdnb  # régénérer src/data/buildings-fr.json depuis l'export BDNB
+npm install          # install dependencies
+npm run dev          # development server
+npm run build        # production build (dist/)
+npm run typecheck    # TypeScript check
+npm run preview      # preview the build
+npm run fetch:nl     # regenerate src/data/buildings-nl.json from PDOK BAG
 ```
 
-## Données
+## Data
 
-Le jeu de données embarqué (`src/data/buildings-fr.json`) est issu de la
-**BDNB réelle** (Base de Données Nationale des Bâtiments, CSTB), export
-open data du **département 06 (Alpes-Maritimes)**, sous
-[Licence Ouverte 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence).
+The bundled dataset (`src/data/buildings-nl.json`) contains **8000 real
+buildings** (2000 per city: Amsterdam, Rotterdam, Den Haag, Utrecht) pulled
+from the **PDOK BAG** (Basisregistratie Adressen en Gebouwen) WFS v2.0,
+keyless national open data:
 
-Pipeline (`scripts/ingest-bdnb.mjs`, streaming ligne à ligne — les CSV
-sources ne sont jamais chargés en mémoire) :
+- `bag:pand` — real footprints, bouwjaar, gebruiksdoel, geometry
+- `bag:verblijfsobject` — real addresses, postcodes, unit areas
 
-1. `batiment_groupe.csv` — géométrie (WKT MULTIPOLYGON, Lambert-93 EPSG:2154) ;
-   centroïde surfacique et emprise au sol en m² calculés en Lambert-93, puis
-   reprojetés en WGS84 avec proj4 (définition issue de `batiment_groupe.prj`,
-   validée sur un point connu d'Aiglun avant conversion de masse).
-2. Jointure du DPE représentatif logement (classe, consommation EP, GES,
-   systèmes, enveloppe), des attributs Fichiers Fonciers (usage, matériaux,
-   nombre de logements) et de la meilleure adresse BAN (fiabilité maximale).
-3. Échantillon plafonné à 12 000 bâtiments, alloué par commune au prorata de
-   son parc (Nice, Cannes, Antibes, Grasse… incluses), priorité aux bâtiments
-   disposant d'un DPE réel (~98 % de l'échantillon).
+Pipeline (`scripts/fetch-netherlands.mjs`):
 
-Champs **modélisés** (non mesurés par la BDNB) :
+1. Tiled WFS queries per city, joined pand to verblijfsobject.
+2. Footprint area and centroid computed in RD New (EPSG:28992, Amersfoort
+   datum), then reprojected to WGS84 with proj4. The transform is validated
+   on a known Dam Square point (Royal Palace, RD 121357,487373 →
+   lat 52.3731, lng 4.8932) before any mass conversion; the run aborts on
+   failure or if more than 1% of points fall outside Dutch bounds.
 
-- `comfort.dh2025/dh2050/dh2100` — cet export ne contient pas d'indicateur de
-  confort d'été. Les degrés-heures d'inconfort sont estimés depuis une base
-  méditerranéenne à été chaud (~1 600 dh en 2025 pour le 06), ajustée par
-  l'inertie, le taux de vitrage, les protections solaires et l'époque de
-  construction ; horizons 2050 = ×1,45 et 2100 = ×2,05.
-- Bâtiments sans DPE : étiquette estimée par défauts d'époque de construction.
-- Valeurs U / isolation d'enveloppe absentes du DPE : défauts d'époque.
+**Estimated fields** (NOT measured, clearly modelled):
 
-Les CSV sources vivent hors du dépôt (`../BDNB/csv`) et ne sont pas versionnés.
+- `certificate.*` — every energielabel is ESTIMATED from bouwjaar-era Dutch
+  archetypes (rijtjeshuizen, portiekflats, galerijflats, vrijstaand) plus a
+  modelled retrofit share. EP-online (RVO) requires an API key and no keyless
+  energielabel source exists, so real labels could not be joined. The Dutch
+  A+++..G scale is collapsed onto A..G (A+++/A++/A+ display as A).
+- `systems.*` — modelled Dutch stock: gas CV-ketel dominant, growing
+  warmtepomp share, cooling rare.
+- `envelope.*` — era-based Dutch U-value defaults (BAG carries no envelope).
+- `comfort.*` — modelled summer discomfort degree-hours for the maritime
+  climate (dh2025 base 250-800, ×1.6 for 2050, ×2.3 for 2100). Dutch
+  regulation uses TOjuli (NTA 8800) instead; DH is a proxy here.
 
-## Stratégie de branches
+Live per-address energielabels can be fetched at runtime through
+`src/api/epOnline.ts` (overheid.io v3 wrapper of EP-online) once an API key
+is set in `.env` (`VITE_EPONLINE_API_KEY`, see `.env.example`).
+
+## Regulation and pricing
+
+Dutch corpus in `src/content/regulation-nl.ts`: BEG (EPBD), BENG 1/2/3,
+Trias Energetica, label C rental target 2030, TOjuli / NTA 8800, ISDE, SVV.
+Gesture prices (`src/content/gestures-nl.ts`) are indicative EUR figures
+based on ISDE/SVV subsidy reference ranges, not live market quotes.
+
+## Branch strategy
 
 - `main` — France (BDNB, DPE, €)
-- `uk` — Royaume-Uni (EPC register, £)
-- `usa` — États-Unis (HERS Index, $)
+- `uk` — United Kingdom (EPC register, £)
+- `usa` — United States (HERS Index, $)
+- `netherlands` — Netherlands (BAG, Energielabel, €) ← this branch
 
-Chaque branche remplace `src/config/country.ts`, le corpus réglementaire
-(`src/content/`) et le jeu de données, sans modifier le contrat partagé
+Each branch replaces `src/config/country.ts`, the regulation corpus
+(`src/content/`) and the dataset, without modifying the shared contract
 `src/types/index.ts`.
 
-## Déploiement
+## Deployment
 
-Le workflow `.github/workflows/deploy.yml` publie `dist/` sur GitHub Pages à
-chaque push sur `main` (site projet : base `/renovativ-ai-map/`).
+The workflow `.github/workflows/deploy.yml` publishes `dist/` to GitHub
+Pages on every push (project site: base `/renovativ-ai-map/`).

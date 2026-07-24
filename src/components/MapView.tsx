@@ -23,15 +23,15 @@ interface MapViewProps {
 }
 
 const COMFORT_LEGEND: { color: string; label: string }[] = [
-  { color: '#2E9E5B', label: 'Confortable' },
-  { color: '#E3C41C', label: 'Inconfort modéré' },
-  { color: '#E8842C', label: 'Inconfort fort' },
-  { color: '#D0342C', label: 'Inconfort sévère' },
+  { color: '#2E9E5B', label: 'Comfortable' },
+  { color: '#E3C41C', label: 'Moderate discomfort' },
+  { color: '#E8842C', label: 'High discomfort' },
+  { color: '#D0342C', label: 'Severe discomfort' },
 ];
 
 const DPE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
 
-/** Marker radius shrinks at low zoom so 12k points stay readable. */
+/** Marker radius shrinks at low zoom so thousands of points stay readable. */
 function radiusForZoom(zoom: number): number {
   if (zoom < 10) return 2.5;
   if (zoom < 12) return 3.5;
@@ -45,8 +45,8 @@ function markerColor(building: Building, mode: MapColorMode): string {
 }
 
 /**
- * Carte Leaflet du parc bati francais.
- * Coloration par etiquette DPE ou par confort d'ete a l'horizon 2050.
+ * Leaflet map of the Dutch building stock.
+ * Colored by energielabel or by summer comfort at the 2050 horizon.
  */
 export default function MapView({
   buildings,
@@ -64,21 +64,21 @@ export default function MapView({
   selectedIdRef.current = selectedId;
   const [infoOpen, setInfoOpen] = useState(false);
 
-  // Creation de la carte, une seule fois.
+  // Map creation, once.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = L.map(containerRef.current, {
       center: COUNTRY.mapCenter,
       zoom: COUNTRY.mapZoom,
       zoomControl: true,
-      // Canvas rendering keeps 12k circleMarkers fluid (SVG would crawl).
+      // Canvas rendering keeps thousands of circleMarkers fluid (SVG would crawl).
       preferCanvas: true,
       renderer: L.canvas({ padding: 0.5 }),
     });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributeurs',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     // Scale marker radius with zoom level (keep the selection ring visible).
     const applyRadii = () => {
@@ -96,7 +96,7 @@ export default function MapView({
     };
   }, []);
 
-  // Creation des marqueurs, une seule fois (le jeu de donnees est statique).
+  // Marker creation, once (the dataset is static).
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -119,7 +119,7 @@ export default function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildings]);
 
-  // Recoloration quand le mode change.
+  // Recolor when the mode changes.
   useEffect(() => {
     for (const [id, marker] of markersRef.current) {
       const b = buildingsRef.current.get(id);
@@ -128,7 +128,7 @@ export default function MapView({
     }
   }, [colorMode]);
 
-  // Anneau terracotta sur le marqueur selectionne.
+  // Terracotta ring on the selected marker.
   useEffect(() => {
     const zoom = mapRef.current?.getZoom() ?? COUNTRY.mapZoom;
     for (const [id, marker] of markersRef.current) {
@@ -142,7 +142,7 @@ export default function MapView({
     }
   }, [selectedId]);
 
-  // Vol vers une adresse recherchee.
+  // Fly to a searched address.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focusRequest) return;
@@ -151,27 +151,27 @@ export default function MapView({
 
   return (
     <>
-      <div ref={containerRef} className="map-leaflet" aria-label="Carte du parc bâti français" />
+      <div ref={containerRef} className="map-leaflet" aria-label="Map of the Dutch building stock" />
 
       <div className="map-controls card">
-        <div className="map-controls__toggle" role="group" aria-label="Coloration de la carte">
+        <div className="map-controls__toggle" role="group" aria-label="Map coloring">
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'dpe' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('dpe')}
           >
-            DPE
+            Energielabel
           </button>
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'comfort' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('comfort')}
           >
-            Confort d’été
+            Summer comfort
           </button>
         </div>
 
-        <div className="map-legend" aria-label="Légende de la carte">
+        <div className="map-legend" aria-label="Map legend">
           {colorMode === 'dpe'
             ? DPE_LABELS.map((label) => (
                 <span key={label} className="map-legend__item">
@@ -192,7 +192,7 @@ export default function MapView({
                 </span>
               ))}
           {colorMode === 'comfort' && (
-            <span className="map-legend__note">Horizon 2050</span>
+            <span className="map-legend__note">2050 horizon</span>
           )}
         </div>
 
@@ -202,23 +202,26 @@ export default function MapView({
           aria-expanded={infoOpen}
           onClick={() => setInfoOpen((v) => !v)}
         >
-          {infoOpen ? 'Masquer l’explication' : 'Pour en savoir plus'}
+          {infoOpen ? 'Hide the explanation' : 'Learn more'}
         </button>
 
         {infoOpen && (
           <div className="map-info">
             {colorMode === 'dpe' ? (
               <p>
-                Le DPE classe chaque bâtiment de A à G selon sa consommation
-                d’énergie primaire et ses émissions de CO2. La classe retenue
-                est la moins bonne des deux. G signale une passoire thermique.
+                The energielabel rates each building from A (best, covering the
+                official A+++/A++/A+ classes) to G (worst) on energy performance,
+                registered in EP-online (RVO). Labels E, F and G fall below the
+                2030 rental target of label C. Labels in this demo are modelled
+                estimates from BAG bouwjaar data.
               </p>
             ) : (
               <p>
-                Le confort d’été mesure les degrés-heures d’inconfort : le cumul
-                des dépassements de température intérieure pendant la saison
-                chaude, sans climatisation. Ici, la projection tient compte du
-                réchauffement attendu en 2050 et de l’îlot de chaleur urbain.
+                Summer comfort is measured in degree-hours of discomfort: the
+                cumulated indoor temperature excess over the hot season, without
+                cooling. This projection includes the warming expected by 2050
+                and the urban heat island. Dutch regulation uses the TOjuli
+                indicator (NTA 8800) for new buildings.
               </p>
             )}
           </div>

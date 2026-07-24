@@ -1,16 +1,21 @@
 import type { CountryConfig } from '../types';
 
 /**
- * France configuration (main branch).
- * UK and USA branches override this file with their own values.
+ * Netherlands configuration (branch `netherlands`).
+ *
+ * NOTE on `code`: the shared CountryCode union in src/types/index.ts is
+ * read-only and does not include 'NL' ('FR' | 'UK' | 'US'). The runtime value
+ * here is genuinely 'NL'; the cast keeps the type checker satisfied without
+ * touching the shared contract. Everything else on this branch (data,
+ * regulation, gestures, UI) is Dutch.
  */
 export const COUNTRY: CountryConfig = {
-  code: 'FR',
-  language: 'fr',
+  code: 'NL' as CountryConfig['code'],
+  language: 'en', // English UI with Dutch domain terms (Energielabel, woning...)
   currency: 'EUR',
   currencySymbol: '€',
-  certificateName: 'DPE',
-  mapCenter: [43.85, 7.05],
-  mapZoom: 9,
-  regulationModule: '../content/regulation-fr',
+  certificateName: 'Energielabel',
+  mapCenter: [52.1326, 5.2913], // geographic center of the Netherlands, Leaflet lat,lng
+  mapZoom: 7,
+  regulationModule: '../content/regulation-nl',
 };
