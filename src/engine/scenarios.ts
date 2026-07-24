@@ -17,13 +17,31 @@ import type {
   ScenarioResult,
 } from '../types';
 import { GESTURES_FR } from '../content/gestures-fr';
-import { finalLabel, labelFromEp, labelFromGes } from './dpe';
+import { labelFromIndicators, type EngineProfile } from './dpe';
 
-/** Prix de l'energie utilise pour valoriser les economies, EUR/kWhEP. */
+/** Prix de l'energie utilise par defaut pour valoriser les economies, EUR/kWhEP. */
 export const ENERGY_PRICE_EUR_PER_KWH = 0.15;
 
 /** Plafond de reduction combinee (90 %) pour eviter les valeurs irrealistes. */
 export const MAX_COMBINED_REDUCTION = 0.9;
+
+/**
+ * Options regionales du moteur. Par defaut : corpus France, prix francais,
+ * bandes DPE. Les regions UK/US passent leur propre corpus et leur devise.
+ */
+export interface EngineOptions {
+  gestures?: RenovationGesture[];
+  energyPrice?: number;
+  profile?: EngineProfile;
+}
+
+function resolveOptions(options: EngineOptions): Required<EngineOptions> {
+  return {
+    gestures: options.gestures ?? GESTURES_FR,
+    energyPrice: options.energyPrice ?? ENERGY_PRICE_EUR_PER_KWH,
+    profile: options.profile ?? 'fr',
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Filtre intelligent : evaluation du DSL
@@ -248,18 +266,20 @@ export function scoreForObjective(
 export function rankGestures(
   building: Building,
   objective: OptimizationObjective,
+  options: EngineOptions = {},
 ): ScenarioResult[] {
-  const results: ScenarioResult[] = GESTURES_FR.map((gesture) => {
+  const { gestures, energyPrice, profile } = resolveOptions(options);
+  const results: ScenarioResult[] = gestures.map((gesture) => {
     const check = evaluateApplicability(building, gesture);
-    const impact = combineWithRequires(building, gesture, GESTURES_FR);
+    const impact = combineWithRequires(building, gesture, gestures);
 
     const newEp = building.certificate.ep * (1 - impact.epSavingPct);
     const newGes = building.certificate.ges * (1 - impact.gesSavingPct);
     const newDh2050 = building.comfort.dh2050 * (1 - impact.dhReductionPct);
-    const newLabel: EnergyLabel = finalLabel(labelFromEp(newEp), labelFromGes(newGes));
+    const newLabel: EnergyLabel = labelFromIndicators(newEp, newGes, profile);
 
     const savedKwhEp = building.annualConsumptionKwhEp * impact.epSavingPct;
-    const annualSaving = savedKwhEp * ENERGY_PRICE_EUR_PER_KWH;
+    const annualSaving = savedKwhEp * energyPrice;
     const payback = paybackYears(impact.totalCost, annualSaving);
     const score = scoreForObjective(objective, impact, payback);
 

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Building } from '../types';
-import { COUNTRY } from '../config/country';
+import type { RegionConfig } from '../regions';
+import { stringsFor } from '../regions/i18n';
 import { classifyDh, labelColor } from '../engine';
 
 export type MapColorMode = 'dpe' | 'comfort';
@@ -15,19 +16,13 @@ export interface FocusRequest {
 
 interface MapViewProps {
   buildings: Building[];
+  region: RegionConfig;
   colorMode: MapColorMode;
   onColorModeChange: (mode: MapColorMode) => void;
   selectedId: string | null;
   onSelect: (building: Building) => void;
   focusRequest: FocusRequest | null;
 }
-
-const COMFORT_LEGEND: { color: string; label: string }[] = [
-  { color: '#2E9E5B', label: 'Confortable' },
-  { color: '#E3C41C', label: 'Inconfort modéré' },
-  { color: '#E8842C', label: 'Inconfort fort' },
-  { color: '#D0342C', label: 'Inconfort sévère' },
-];
 
 const DPE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
 
@@ -45,11 +40,14 @@ function markerColor(building: Building, mode: MapColorMode): string {
 }
 
 /**
- * Carte Leaflet du parc bati francais.
- * Coloration par etiquette DPE ou par confort d'ete a l'horizon 2050.
+ * Carte Leaflet du parc bati de la region active.
+ * Coloration par etiquette du certificat national ou par confort d'ete
+ * a l'horizon 2050. Au changement de region, les marqueurs sont remplaces
+ * et la carte vole vers le nouveau centre.
  */
 export default function MapView({
   buildings,
+  region,
   colorMode,
   onColorModeChange,
   selectedId,
@@ -62,14 +60,18 @@ export default function MapView({
   const buildingsRef = useRef<Map<string, Building>>(new Map());
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
+  const colorModeRef = useRef<MapColorMode>(colorMode);
+  colorModeRef.current = colorMode;
   const [infoOpen, setInfoOpen] = useState(false);
+
+  const t = stringsFor(region.language);
 
   // Creation de la carte, une seule fois.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = L.map(containerRef.current, {
-      center: COUNTRY.mapCenter,
-      zoom: COUNTRY.mapZoom,
+      center: region.mapCenter,
+      zoom: region.mapZoom,
       zoomControl: true,
       // Canvas rendering keeps 12k circleMarkers fluid (SVG would crawl).
       preferCanvas: true,
@@ -93,14 +95,34 @@ export default function MapView({
       map.remove();
       mapRef.current = null;
       markersRef.current.clear();
+      buildingsRef.current.clear();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Creation des marqueurs, une seule fois (le jeu de donnees est statique).
+  // Vol vers le centre de la region quand elle change.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyTo(region.mapCenter, region.mapZoom, { duration: 1.2 });
+  }, [region]);
+
+  // Synchronisation des marqueurs avec les batiments de la region active :
+  // suppression des anciens, ajout des nouveaux.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const markers = markersRef.current;
+    const nextIds = new Set(buildings.map((b) => b.id));
+
+    for (const [id, marker] of markers) {
+      if (!nextIds.has(id)) {
+        marker.remove();
+        markers.delete(id);
+        buildingsRef.current.delete(id);
+      }
+    }
+
     for (const b of buildings) {
       if (markers.has(b.id)) continue;
       buildingsRef.current.set(b.id, b);
@@ -109,7 +131,7 @@ export default function MapView({
         fillOpacity: 0.85,
         weight: 1,
         color: '#ffffff',
-        fillColor: markerColor(b, 'dpe'),
+        fillColor: markerColor(b, colorModeRef.current),
       });
       marker.on('click', () => onSelect(b));
       marker.bindTooltip(`${b.address}, ${b.city}`, { direction: 'top', sticky: true });
@@ -130,7 +152,7 @@ export default function MapView({
 
   // Anneau terracotta sur le marqueur selectionne.
   useEffect(() => {
-    const zoom = mapRef.current?.getZoom() ?? COUNTRY.mapZoom;
+    const zoom = mapRef.current?.getZoom() ?? region.mapZoom;
     for (const [id, marker] of markersRef.current) {
       const isSelected = id === selectedId;
       marker.setStyle(
@@ -140,7 +162,7 @@ export default function MapView({
       );
       if (isSelected) marker.bringToFront();
     }
-  }, [selectedId]);
+  }, [selectedId, region]);
 
   // Vol vers une adresse recherchee.
   useEffect(() => {
@@ -151,27 +173,27 @@ export default function MapView({
 
   return (
     <>
-      <div ref={containerRef} className="map-leaflet" aria-label="Carte du parc bâti français" />
+      <div ref={containerRef} className="map-leaflet" aria-label={t.map.ariaLabel} />
 
       <div className="map-controls card">
-        <div className="map-controls__toggle" role="group" aria-label="Coloration de la carte">
+        <div className="map-controls__toggle" role="group" aria-label={t.map.colorToggleAriaLabel}>
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'dpe' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('dpe')}
           >
-            DPE
+            {region.certificateShortName}
           </button>
           <button
             type="button"
             className={`btn btn-sm ${colorMode === 'comfort' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => onColorModeChange('comfort')}
           >
-            Confort d’été
+            {t.map.colorComfort}
           </button>
         </div>
 
-        <div className="map-legend" aria-label="Légende de la carte">
+        <div className="map-legend" aria-label={t.map.legendAriaLabel}>
           {colorMode === 'dpe'
             ? DPE_LABELS.map((label) => (
                 <span key={label} className="map-legend__item">
@@ -182,7 +204,7 @@ export default function MapView({
                   {label}
                 </span>
               ))
-            : COMFORT_LEGEND.map((item) => (
+            : t.map.comfortLegend.map((item) => (
                 <span key={item.label} className="map-legend__item">
                   <span
                     className="map-legend__swatch"
@@ -192,7 +214,7 @@ export default function MapView({
                 </span>
               ))}
           {colorMode === 'comfort' && (
-            <span className="map-legend__note">Horizon 2050</span>
+            <span className="map-legend__note">{t.map.horizonNote}</span>
           )}
         </div>
 
@@ -202,25 +224,12 @@ export default function MapView({
           aria-expanded={infoOpen}
           onClick={() => setInfoOpen((v) => !v)}
         >
-          {infoOpen ? 'Masquer l’explication' : 'Pour en savoir plus'}
+          {infoOpen ? t.map.moreInfoHide : t.map.moreInfoShow}
         </button>
 
         {infoOpen && (
           <div className="map-info">
-            {colorMode === 'dpe' ? (
-              <p>
-                Le DPE classe chaque bâtiment de A à G selon sa consommation
-                d’énergie primaire et ses émissions de CO2. La classe retenue
-                est la moins bonne des deux. G signale une passoire thermique.
-              </p>
-            ) : (
-              <p>
-                Le confort d’été mesure les degrés-heures d’inconfort : le cumul
-                des dépassements de température intérieure pendant la saison
-                chaude, sans climatisation. Ici, la projection tient compte du
-                réchauffement attendu en 2050 et de l’îlot de chaleur urbain.
-              </p>
-            )}
+            <p>{colorMode === 'dpe' ? t.map.infoCertificate : t.map.infoComfort}</p>
           </div>
         )}
       </div>

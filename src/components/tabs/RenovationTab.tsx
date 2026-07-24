@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { Building, OptimizationObjective, ScenarioResult } from '../../types';
-import { rankGestures, suggestBestPackage } from '../../engine';
-import { GESTURES_FR } from '../../content/gestures-fr';
-import { REGULATION_FR } from '../../content/regulation-fr';
+import type { RegionConfig } from '../../regions';
+import { stringsFor } from '../../regions/i18n';
+import { rankGestures, suggestBestPackage, type EngineOptions } from '../../engine';
 import RegulationCard from '../RegulationCard';
 import {
   formatCurrency,
@@ -13,17 +13,13 @@ import {
 
 interface RenovationTabProps {
   building: Building;
+  region: RegionConfig;
 }
 
-const OBJECTIVES: { value: OptimizationObjective; label: string }[] = [
-  { value: 'comfort', label: 'Confort d’été' },
-  { value: 'energy', label: 'Énergie' },
-  { value: 'carbon', label: 'Carbone' },
-  { value: 'cost', label: 'Coût' },
-];
+const OBJECTIVE_KEYS = ['comfort', 'energy', 'carbon', 'cost'] as const;
 
 /** Graphique de chapelet : les 10 meilleurs gestes applicables, barres en SVG. */
-function Chapelet({ results }: { results: ScenarioResult[] }) {
+function Chapelet({ results, ariaLabel }: { results: ScenarioResult[]; ariaLabel: string }) {
   const width = 340;
   const rowHeight = 30;
   const nameWidth = 128;
@@ -36,7 +32,7 @@ function Chapelet({ results }: { results: ScenarioResult[] }) {
       className="chapelet"
       viewBox={`0 0 ${width} ${results.length * rowHeight}`}
       role="img"
-      aria-label="Classement des gestes de rénovation"
+      aria-label={ariaLabel}
     >
       {results.map((r, i) => {
         const y = i * rowHeight;
@@ -45,9 +41,9 @@ function Chapelet({ results }: { results: ScenarioResult[] }) {
           r.gesture.name.length > 24 ? `${r.gesture.name.slice(0, 23)}…` : r.gesture.name;
         return (
           <g key={r.gesture.id}>
-            <title>{`${r.gesture.name}. ${r.gesture.description} Coût estimé : ${formatCurrency(
+            <title>{`${r.gesture.name}. ${r.gesture.description} ${formatCurrency(
               r.estimatedCost,
-            )}. Retour : ${formatPayback(r.paybackYears)}.`}</title>
+            )}. ${formatPayback(r.paybackYears)}.`}</title>
             <text x={0} y={y + 18} fontSize="10.5" fill="#232323">
               {name}
             </text>
@@ -85,57 +81,69 @@ function Chapelet({ results }: { results: ScenarioResult[] }) {
 }
 
 /** Onglet Renovation : objectif, chapelet, scenario recommande, aides. */
-export default function RenovationTab({ building }: RenovationTabProps) {
+export default function RenovationTab({ building, region }: RenovationTabProps) {
   const [objective, setObjective] = useState<OptimizationObjective>('energy');
+  const t = stringsFor(region.language).renovation;
 
-  const ranked = useMemo(() => rankGestures(building, objective), [building, objective]);
+  const engineOptions: EngineOptions = useMemo(
+    () => ({
+      gestures: region.content.gestures,
+      energyPrice: region.energyPrice,
+      profile: region.engineProfile,
+    }),
+    [region],
+  );
+
+  const ranked = useMemo(
+    () => rankGestures(building, objective, engineOptions),
+    [building, objective, engineOptions],
+  );
   const top = ranked.filter((r) => r.applicable).slice(0, 10);
-  const pack = useMemo(() => suggestBestPackage(building, objective), [building, objective]);
+  const pack = useMemo(
+    () => suggestBestPackage(building, objective, undefined, engineOptions),
+    [building, objective, engineOptions],
+  );
 
   const packGestures = pack.gestureIds
-    .map((id) => GESTURES_FR.find((g) => g.id === id))
+    .map((id) => region.content.gestures.find((g) => g.id === id))
     .filter((g): g is NonNullable<typeof g> => g !== undefined);
 
-  const items = REGULATION_FR.filter(
+  const items = region.content.regulation.filter(
     (r) => r.relevance.includes('renovation') || r.relevance.includes('funding'),
   );
 
   return (
     <>
       <section className="detail-panel__section">
-        <h3>Objectif de rénovation</h3>
-        <div className="objective-picker" role="group" aria-label="Objectif de rénovation">
-          {OBJECTIVES.map((o) => (
+        <h3>{t.objectiveTitle}</h3>
+        <div className="objective-picker" role="group" aria-label={t.objectiveAriaLabel}>
+          {OBJECTIVE_KEYS.map((key) => (
             <button
-              key={o.value}
+              key={key}
               type="button"
-              className={`btn btn-sm ${objective === o.value ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setObjective(o.value)}
+              className={`btn btn-sm ${objective === key ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setObjective(key)}
             >
-              {o.label}
+              {t.objectives[key]}
             </button>
           ))}
         </div>
       </section>
 
       <section className="detail-panel__section">
-        <h3>Graphique de chapelet</h3>
+        <h3>{t.chapeletTitle}</h3>
         {top.length > 0 ? (
           <>
-            <Chapelet results={top} />
-            <p className="note">
-              Les 10 gestes les plus pertinents pour cet objectif, notés sur 100.
-              Survolez une barre pour le détail du geste et son retour sur
-              investissement.
-            </p>
+            <Chapelet results={top} ariaLabel={t.chapeletAriaLabel} />
+            <p className="note">{t.chapeletNote}</p>
           </>
         ) : (
-          <p className="note">Aucun geste applicable à ce bâtiment pour cet objectif.</p>
+          <p className="note">{t.noGestures}</p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Scénario recommandé</h3>
+        <h3>{t.scenarioTitle}</h3>
         {packGestures.length > 0 ? (
           <div className="card scenario-card">
             <ul className="scenario-card__gestures">
@@ -148,19 +156,19 @@ export default function RenovationTab({ building }: RenovationTabProps) {
             </ul>
             <dl className="kv-list kv-list--compact">
               <div className="kv-list__row">
-                <dt>Coût total estimé</dt>
+                <dt>{t.totalCost}</dt>
                 <dd>{formatCurrency(pack.totalCost)}</dd>
               </div>
               <div className="kv-list__row">
-                <dt>Économie annuelle</dt>
+                <dt>{t.annualSaving}</dt>
                 <dd>{formatCurrency(pack.totalAnnualSaving)}</dd>
               </div>
               <div className="kv-list__row">
-                <dt>Retour sur investissement</dt>
+                <dt>{t.payback}</dt>
                 <dd>{formatPayback(pack.paybackYears)}</dd>
               </div>
               <div className="kv-list__row">
-                <dt>Étiquette DPE</dt>
+                <dt>{t.certificateLabel}</dt>
                 <dd className="label-shift">
                   <span className={`dpe-badge dpe-${building.certificate.label.toLowerCase()}`}>
                     {building.certificate.label}
@@ -172,7 +180,7 @@ export default function RenovationTab({ building }: RenovationTabProps) {
                 </dd>
               </div>
               <div className="kv-list__row">
-                <dt>Inconfort d’été 2050</dt>
+                <dt>{t.summerDiscomfort}</dt>
                 <dd>
                   {formatDh(building.comfort.dh2050)} → {formatDh(pack.newDh2050)}
                 </dd>
@@ -180,14 +188,14 @@ export default function RenovationTab({ building }: RenovationTabProps) {
             </dl>
           </div>
         ) : (
-          <p className="note">Aucun scénario disponible pour cet objectif.</p>
+          <p className="note">{t.noScenario}</p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Réglementation et aides</h3>
+        <h3>{t.regulationTitle}</h3>
         {items.map((item) => (
-          <RegulationCard key={item.key} item={item} />
+          <RegulationCard key={item.key} item={item} lang={region.language} />
         ))}
       </section>
     </>

@@ -1,28 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Building } from '../types';
-import { searchBuildings } from '../data';
+import { searchIn } from '../data';
 
 interface SearchBarProps {
+  buildings: Building[];
+  placeholder: string;
+  ariaLabel: string;
   onPick: (building: Building) => void;
 }
 
 const MAX_RESULTS = 8;
 
 /**
- * Recherche d'adresse dans l'en-tete.
+ * Recherche d'adresse dans l'en-tete, sur les batiments de la region active.
  * Insensible a la casse et aux accents, 8 resultats maximum.
  */
-export default function SearchBar({ onPick }: SearchBarProps) {
+export default function SearchBar({ buildings, placeholder, ariaLabel, onPick }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Building[]>([]);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const found = searchBuildings(query).slice(0, MAX_RESULTS);
+    const found = searchIn(buildings, query).slice(0, MAX_RESULTS);
     setResults(found);
     setOpen(query.trim().length > 0 && found.length > 0);
-  }, [query]);
+  }, [buildings, query]);
 
   useEffect(() => {
     function onDocClick(event: MouseEvent) {
@@ -45,8 +48,8 @@ export default function SearchBar({ onPick }: SearchBarProps) {
       <input
         type="search"
         value={query}
-        placeholder="Rechercher une adresse, une ville…"
-        aria-label="Rechercher une adresse"
+        placeholder={placeholder}
+        aria-label={ariaLabel}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => {
           if (results.length > 0 && query.trim().length > 0) setOpen(true);

@@ -2,16 +2,21 @@ import type { RegulationItem } from '../types';
 
 interface RegulationCardProps {
   item: RegulationItem;
+  /** Langue d'affichage des libelles chrome (defaut francais). */
+  lang?: 'fr' | 'en';
 }
 
 /** Carte compacte d'un texte reglementaire. */
-export default function RegulationCard({ item }: RegulationCardProps) {
+export default function RegulationCard({ item, lang = 'fr' }: RegulationCardProps) {
+  const count = item.obligations.length;
   return (
     <article className="card regulation-card">
       <h4 className="regulation-card__title">{item.title}</h4>
       <p className="regulation-card__summary">{item.summary}</p>
       <p className="regulation-card__meta">
-        {item.obligations.length} obligation{item.obligations.length > 1 ? 's' : ''} clé
+        {lang === 'en'
+          ? `${count} key obligation${count > 1 ? 's' : ''}`
+          : `${count} obligation${count > 1 ? 's' : ''} clé`}
       </p>
       <a
         className="regulation-card__link"
@@ -19,7 +24,7 @@ export default function RegulationCard({ item }: RegulationCardProps) {
         target="_blank"
         rel="noreferrer"
       >
-        Source officielle
+        {lang === 'en' ? 'Official source' : 'Source officielle'}
       </a>
     </article>
   );

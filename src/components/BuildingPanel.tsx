@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Building } from '../types';
-import { COUNTRY } from '../config/country';
+import type { RegionConfig } from '../regions';
+import { stringsFor } from '../regions/i18n';
 import CharacteristicsTab from './tabs/CharacteristicsTab';
 import DpeTab from './tabs/DpeTab';
 import RenovationTab from './tabs/RenovationTab';
@@ -9,34 +10,37 @@ import { usageLabel } from '../utils/format';
 
 interface BuildingPanelProps {
   building: Building | null;
+  region: RegionConfig;
   onClose: () => void;
 }
 
 type TabKey = 'characteristics' | 'dpe' | 'renovation' | 'heatwave';
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'characteristics', label: 'Caractéristiques' },
-  { key: 'dpe', label: COUNTRY.certificateName },
-  { key: 'renovation', label: 'Rénovation' },
-  { key: 'heatwave', label: 'Canicule' },
-];
-
 /**
  * Panneau lateral droit : diagnostic du batiment selectionne,
- * quatre onglets (caracteristiques, DPE, renovation, canicule).
+ * quatre onglets (caracteristiques, certificat, renovation, canicule).
+ * Langue, certificat, reglementation et devise suivent la region active.
  */
-export default function BuildingPanel({ building, onClose }: BuildingPanelProps) {
+export default function BuildingPanel({ building, region, onClose }: BuildingPanelProps) {
   const [tab, setTab] = useState<TabKey>('characteristics');
+  const t = stringsFor(region.language);
 
-  // Retour au premier onglet quand on change de batiment.
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: 'characteristics', label: t.panel.tabCharacteristics },
+    { key: 'dpe', label: region.certificateName },
+    { key: 'renovation', label: t.panel.tabRenovation },
+    { key: 'heatwave', label: t.panel.tabHeatwave },
+  ];
+
+  // Retour au premier onglet quand on change de batiment ou de region.
   useEffect(() => {
     setTab('characteristics');
-  }, [building?.id]);
+  }, [building?.id, region.id]);
 
   return (
     <aside
       className={`detail-panel ${building ? 'is-open' : ''}`}
-      aria-label="Diagnostic du bâtiment"
+      aria-label={t.panel.ariaLabel}
       aria-hidden={!building}
     >
       {building && (
@@ -44,7 +48,7 @@ export default function BuildingPanel({ building, onClose }: BuildingPanelProps)
           <button
             type="button"
             className="detail-panel__close"
-            aria-label="Fermer le panneau"
+            aria-label={t.panel.closeAriaLabel}
             onClick={onClose}
           >
             ×
@@ -57,24 +61,26 @@ export default function BuildingPanel({ building, onClose }: BuildingPanelProps)
             </p>
           </header>
 
-          <nav className="tab-bar" aria-label="Onglets du diagnostic">
-            {TABS.map((t) => (
+          <nav className="tab-bar" aria-label={t.panel.tabsAriaLabel}>
+            {TABS.map((tabDef) => (
               <button
-                key={t.key}
+                key={tabDef.key}
                 type="button"
-                className={`tab-bar__tab ${tab === t.key ? 'is-active' : ''}`}
-                onClick={() => setTab(t.key)}
+                className={`tab-bar__tab ${tab === tabDef.key ? 'is-active' : ''}`}
+                onClick={() => setTab(tabDef.key)}
               >
-                {t.label}
+                {tabDef.label}
               </button>
             ))}
           </nav>
 
           <div className="detail-panel__content">
-            {tab === 'characteristics' && <CharacteristicsTab building={building} />}
-            {tab === 'dpe' && <DpeTab building={building} />}
-            {tab === 'renovation' && <RenovationTab building={building} />}
-            {tab === 'heatwave' && <HeatwaveTab building={building} />}
+            {tab === 'characteristics' && <CharacteristicsTab building={building} region={region} />}
+            {tab === 'dpe' && <DpeTab building={building} region={region} />}
+            {tab === 'renovation' && <RenovationTab building={building} region={region} />}
+            {tab === 'heatwave' && <HeatwaveTab building={building} region={region} />}
+
+            <p className="note detail-panel__disclaimer">{region.disclaimer}</p>
           </div>
         </>
       )}

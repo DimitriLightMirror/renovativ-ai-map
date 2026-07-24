@@ -1,17 +1,16 @@
 /**
- * Renovativ AI Map — typed loader for the real BDNB dataset.
+ * data/index.ts — chargement asynchrone des jeux de donnees par region.
  *
- * The dataset is produced by scripts/ingest-bdnb.mjs from the BDNB open-data
- * export of department 06 (Alpes-Maritimes), Licence Ouverte 2.0, and conforms
- * to the Building interface defined in src/types/index.ts.
- *
- * No runtime dependencies: pure TypeScript over the bundled JSON.
+ * Chaque region sert un JSON reel depuis public/data (BDNB departement 06,
+ * registre EPC londonien, LL84/PLUTO new-yorkais). Les fichiers sont
+ * telecharges a la demande puis gardes en cache memoire.
  */
 
 import type { Building, EnergyLabel } from '../types';
-import buildingsJson from './buildings-fr.json';
+import { getRegion, type RegionId } from '../regions';
 
-const BUILDINGS: Building[] = buildingsJson as unknown as Building[];
+const cache = new Map<RegionId, Building[]>();
+const pending = new Map<RegionId, Promise<Building[]>>();
 
 const SEARCH_LIMIT = 20;
 
@@ -29,24 +28,52 @@ export interface DataStats {
   perCity: Record<string, number>;
 }
 
-/** All buildings, in dataset order. The array is shared; treat it as read-only. */
-export function getBuildings(): Building[] {
-  return BUILDINGS;
+/**
+ * Telecharge (ou relit depuis le cache) les batiments d'une region.
+ * Les appels concurrents partagent la meme promesse.
+ */
+export function loadRegion(regionId: RegionId): Promise<Building[]> {
+  const cached = cache.get(regionId);
+  if (cached) return Promise.resolve(cached);
+
+  const running = pending.get(regionId);
+  if (running) return running;
+
+  const region = getRegion(regionId);
+  const promise = fetch(region.dataUrl)
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status} on ${region.dataUrl}`);
+      return res.json() as Promise<unknown>;
+    })
+    .then((json) => {
+      const buildings = json as Building[];
+      cache.set(regionId, buildings);
+      pending.delete(regionId);
+      return buildings;
+    })
+    .catch((err) => {
+      pending.delete(regionId);
+      throw err;
+    });
+
+  pending.set(regionId, promise);
+  return promise;
 }
 
-export function getBuildingById(id: string): Building | undefined {
-  return BUILDINGS.find((b) => b.id === id);
+/** Batiments deja en cache pour une region, undefined si jamais charges. */
+export function getCached(regionId: RegionId): Building[] | undefined {
+  return cache.get(regionId);
 }
 
 /**
  * Substring search on address, city and postcode.
  * Case- and accent-insensitive, capped at 20 results.
  */
-export function searchBuildings(query: string): Building[] {
+export function searchIn(buildings: Building[], query: string): Building[] {
   const q = normalize(query.trim());
   if (q.length === 0) return [];
   const results: Building[] = [];
-  for (const b of BUILDINGS) {
+  for (const b of buildings) {
     if (
       normalize(b.address).includes(q) ||
       normalize(b.city).includes(q) ||
@@ -59,13 +86,13 @@ export function searchBuildings(query: string): Building[] {
   return results;
 }
 
-/** Counts per DPE label (A to G) and per city, for the map legend and dashboards. */
-export function getStats(): DataStats {
+/** Counts per certificate label (A to G) and per city, for the stats bar. */
+export function statsOf(buildings: Building[]): DataStats {
   const perLabel: Record<EnergyLabel, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0 };
   const perCity: Record<string, number> = {};
-  for (const b of BUILDINGS) {
+  for (const b of buildings) {
     perLabel[b.certificate.label] += 1;
     perCity[b.city] = (perCity[b.city] ?? 0) + 1;
   }
-  return { total: BUILDINGS.length, perLabel, perCity };
+  return { total: buildings.length, perLabel, perCity };
 }

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import type { Building, HeatwaveRecommendation } from '../../types';
+import type { RegionConfig } from '../../regions';
+import { stringsFor } from '../../regions/i18n';
 import { comfortForHorizons } from '../../engine';
-import { HEATWAVE_RECS_FR } from '../../content/heatwave-fr';
-import { REGULATION_FR } from '../../content/regulation-fr';
 import RegulationCard from '../RegulationCard';
 import {
   coolingLabel,
@@ -13,6 +13,7 @@ import {
 
 interface HeatwaveTabProps {
   building: Building;
+  region: RegionConfig;
 }
 
 const PRIORITY_ORDER: Record<HeatwaveRecommendation['priority'], number> = {
@@ -21,25 +22,27 @@ const PRIORITY_ORDER: Record<HeatwaveRecommendation['priority'], number> = {
   optionnel: 2,
 };
 
-const PRIORITY_LABELS: Record<HeatwaveRecommendation['priority'], string> = {
-  essentiel: 'Essentiel',
-  recommande: 'Recommandé',
-  optionnel: 'Optionnel',
-};
-
 /** Onglet Canicule : confort d'ete a trois horizons et preparation. */
-export default function HeatwaveTab({ building }: HeatwaveTabProps) {
+export default function HeatwaveTab({ building, region }: HeatwaveTabProps) {
   const horizons = comfortForHorizons(building);
+  const t = stringsFor(region.language).heatwave;
 
   const recs = useMemo(
     () =>
-      HEATWAVE_RECS_FR.filter((r) => matchesTrigger(building, r.trigger)).sort(
-        (a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority],
-      ),
-    [building],
+      region.content.heatwave
+        .filter((r) => matchesTrigger(building, r.trigger))
+        .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]),
+    [building, region],
   );
 
-  const items = REGULATION_FR.filter((r) => r.relevance.includes('heatwave'));
+  const items = region.content.regulation.filter((r) => r.relevance.includes('heatwave'));
+
+  const comfortLabels: Record<string, string> = {
+    confortable: stringsFor(region.language).map.comfortLegend[0].label,
+    inconfort_modere: stringsFor(region.language).map.comfortLegend[1].label,
+    inconfort_fort: stringsFor(region.language).map.comfortLegend[2].label,
+    inconfort_severe: stringsFor(region.language).map.comfortLegend[3].label,
+  };
 
   const bubbles = [
     { year: '2025', dh: building.comfort.dh2025, c: horizons.h2025 },
@@ -50,7 +53,7 @@ export default function HeatwaveTab({ building }: HeatwaveTabProps) {
   return (
     <>
       <section className="detail-panel__section">
-        <h3>Confort d’été à trois horizons</h3>
+        <h3>{t.comfortTitle}</h3>
         <div className="comfort-row">
           {bubbles.map((b) => (
             <div key={b.year} className="comfort-cell">
@@ -62,52 +65,49 @@ export default function HeatwaveTab({ building }: HeatwaveTabProps) {
                   color: b.c.level === 'inconfort_modere' ? '#232323' : '#ffffff',
                 }}
               >
-                {b.c.label}
+                {comfortLabels[b.c.level]}
               </span>
               <span className="comfort-cell__value">{formatDh(b.dh)}</span>
             </div>
           ))}
         </div>
-        <p className="note">
-          Degrés-heures d’inconfort par été, sans climatisation. Les projections
-          2050 et 2100 tiennent compte du réchauffement et de l’îlot de chaleur
-          urbain.
-        </p>
+        <p className="note">{t.comfortNote}</p>
         {building.systems.cooling && (
           <p className="note note--cooling">
-            Ce bâtiment dispose déjà d’un refroidissement :{' '}
-            {coolingLabel(building.systems.cooling)}. Les mesures passives
-            restent prioritaires pour limiter la consommation.
+            {t.coolingNotePrefix}
+            {coolingLabel(building.systems.cooling)}
+            {t.coolingNoteSuffix}
           </p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Préparation aux canicules</h3>
+        <h3>{t.prepTitle}</h3>
         {recs.length > 0 ? (
           recs.map((rec) => (
             <article key={rec.id} className="card heatwave-card">
               <header className="heatwave-card__head">
                 <h4>{rec.title}</h4>
                 <span className={`priority-chip priority-chip--${rec.priority}`}>
-                  {PRIORITY_LABELS[rec.priority]}
+                  {t.priorities[rec.priority]}
                 </span>
               </header>
               <p>{rec.description}</p>
               <p className="heatwave-card__cost">
-                Coût indicatif : {formatCostRange(rec.indicativeCostEUR)}
+                {t.indicativeCost}
+                {formatCostRange(rec.indicativeCostEUR)}
               </p>
             </article>
           ))
         ) : (
-          <p className="note">Ce bâtiment est déjà bien préparé aux épisodes chauds.</p>
+          <p className="note">{t.wellPrepared}</p>
         )}
       </section>
 
       <section className="detail-panel__section">
-        <h3>Réglementation applicable</h3>
+        <h3>{t.regulationTitle}</h3>
         {items.map((item) => (
-          <RegulationCard key={item.key} item={item} />
+          <RegulationCard key={item.key} item={item} lang={region.language} />
         ))}
       </section>
     </>

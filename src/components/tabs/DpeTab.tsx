@@ -1,5 +1,7 @@
 import type { Building, EnergyLabel } from '../../types';
-import { REGULATION_FR } from '../../content/regulation-fr';
+import type { RegionConfig } from '../../regions';
+import { stringsFor } from '../../regions/i18n';
+import { gaugeBounds } from '../../engine';
 import RegulationCard from '../RegulationCard';
 import {
   formatAnnualGes,
@@ -11,6 +13,7 @@ import {
 
 interface DpeTabProps {
   building: Building;
+  region: RegionConfig;
 }
 
 const LABELS: EnergyLabel[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -24,34 +27,41 @@ const LABEL_COLORS: Record<EnergyLabel, string> = {
   G: '#FD0205',
 };
 
-/** Bornes hautes de chaque classe EP, kWhEP/m2/an. La derniere borne est visuelle. */
-const EP_BOUNDS = [0, 70, 110, 180, 250, 330, 420, 560];
-
 /** Position 0..100 du curseur sur la jauge A a G, interpolation lineaire par classe. */
-function gaugePosition(ep: number): number {
-  const v = Math.max(0, Math.min(ep, EP_BOUNDS[EP_BOUNDS.length - 1]));
-  for (let i = 0; i < EP_BOUNDS.length - 1; i++) {
-    if (v <= EP_BOUNDS[i + 1]) {
-      const span = EP_BOUNDS[i + 1] - EP_BOUNDS[i];
-      const t = span === 0 ? 0 : (v - EP_BOUNDS[i]) / span;
-      return ((i + t) / LABELS.length) * 100;
+function gaugePosition(ep: number, bounds: readonly number[]): number {
+  const v = Math.max(0, Math.min(ep, bounds[bounds.length - 1]));
+  for (let i = 0; i < bounds.length - 1; i++) {
+    if (v <= bounds[i + 1]) {
+      const span = bounds[i + 1] - bounds[i];
+      const pos = span === 0 ? 0 : (v - bounds[i]) / span;
+      return ((i + pos) / LABELS.length) * 100;
     }
   }
   return 100;
 }
 
 /** Jauge horizontale A a G avec curseur, en SVG inline. */
-function DpeGauge({ ep, label }: { ep: number; label: EnergyLabel }) {
+function DpeGauge({
+  ep,
+  label,
+  bounds,
+  ariaLabel,
+}: {
+  ep: number;
+  label: EnergyLabel;
+  bounds: readonly number[];
+  ariaLabel: string;
+}) {
   const width = 340;
   const height = 26;
   const segWidth = width / LABELS.length;
-  const markerX = (gaugePosition(ep) / 100) * width;
+  const markerX = (gaugePosition(ep, bounds) / 100) * width;
   return (
     <svg
       className="dpe-gauge"
       viewBox={`0 0 ${width} ${height + 18}`}
       role="img"
-      aria-label={`Classe énergie ${label}`}
+      aria-label={`${ariaLabel} ${label}`}
     >
       {LABELS.map((l, i) => (
         <g key={l}>
@@ -84,25 +94,27 @@ function DpeGauge({ ep, label }: { ep: number; label: EnergyLabel }) {
   );
 }
 
-/** Onglet DPE : etiquette, jauge, chiffres annuels, reglementation. */
-export default function DpeTab({ building }: DpeTabProps) {
+/** Onglet certificat : etiquette, jauge, chiffres annuels, reglementation. */
+export default function DpeTab({ building, region }: DpeTabProps) {
   const c = building.certificate;
-  const items = REGULATION_FR.filter((r) => r.relevance.includes('certificate'));
+  const t = stringsFor(region.language).certificate;
+  const items = region.content.regulation.filter((r) => r.relevance.includes('certificate'));
+  const bounds = gaugeBounds(region.engineProfile);
 
   return (
     <>
       <section className="detail-panel__section">
-        <h3>Étiquettes</h3>
+        <h3>{t.labelsTitle}</h3>
         <div className="dpe-hero">
           <div className="dpe-hero__badges">
             <div className="dpe-hero__badge-block">
-              <span className="card__label">Énergie</span>
+              <span className="card__label">{t.energy}</span>
               <span className={`dpe-badge dpe-badge--lg dpe-${c.label.toLowerCase()}`}>
                 {c.label}
               </span>
             </div>
             <div className="dpe-hero__badge-block">
-              <span className="card__label">Climat (GES)</span>
+              <span className="card__label">{t.climate}</span>
               <span className={`dpe-badge dpe-badge--lg dpe-${c.gesLabel.toLowerCase()}`}>
                 {c.gesLabel}
               </span>
@@ -110,42 +122,39 @@ export default function DpeTab({ building }: DpeTabProps) {
           </div>
           <div className="dpe-hero__values">
             <p>
-              <strong>{formatEp(c.ep)}</strong> d’énergie primaire
+              <strong>{formatEp(c.ep)}</strong> {t.primaryEnergySuffix}
             </p>
             <p>
-              <strong>{formatGes(c.ges)}</strong> de gaz à effet de serre
+              <strong>{formatGes(c.ges)}</strong> {t.gesSuffix}
             </p>
           </div>
         </div>
-        <DpeGauge ep={c.ep} label={c.label} />
-        <p className="note">
-          Consommation d’énergie primaire rapportée à la surface de plancher.
-          La classe finale est la moins bonne des deux étiquettes.
-        </p>
+        <DpeGauge ep={c.ep} label={c.label} bounds={bounds} ariaLabel={t.gaugeAriaLabel} />
+        <p className="note">{t.note}</p>
       </section>
 
       <section className="detail-panel__section">
-        <h3>Chiffres annuels</h3>
+        <h3>{t.annualTitle}</h3>
         <div className="stat-grid">
           <div className="card">
-            <p className="card__label">Consommation annuelle</p>
+            <p className="card__label">{t.annualConsumption}</p>
             <p className="card__value">{formatAnnualKwh(building.annualConsumptionKwhEp)}</p>
           </div>
           <div className="card">
-            <p className="card__label">Émissions annuelles</p>
+            <p className="card__label">{t.annualEmissions}</p>
             <p className="card__value">{formatAnnualGes(building.annualGesKgCo2)}</p>
           </div>
           <div className="card">
-            <p className="card__label">Coût énergétique annuel</p>
+            <p className="card__label">{t.annualCost}</p>
             <p className="card__value">{formatCurrency(building.annualEnergyCostEur)}</p>
           </div>
         </div>
       </section>
 
       <section className="detail-panel__section">
-        <h3>Réglementation applicable</h3>
+        <h3>{t.regulationTitle}</h3>
         {items.map((item) => (
-          <RegulationCard key={item.key} item={item} />
+          <RegulationCard key={item.key} item={item} lang={region.language} />
         ))}
       </section>
     </>

@@ -10,7 +10,9 @@ export {
   labelFromIndicators,
   labelRank,
   labelColor,
+  gaugeBounds,
 } from './dpe';
+export type { EngineProfile } from './dpe';
 
 export { classifyDh, comfortForHorizons } from './comfort';
 export type { ComfortLevel, ComfortClassification, ComfortHorizons } from './comfort';
@@ -26,7 +28,7 @@ export {
   scoreForObjective,
   rankGestures,
 } from './scenarios';
-export type { ApplicabilityCheck } from './scenarios';
+export type { ApplicabilityCheck, EngineOptions } from './scenarios';
 
 export { simulateScenario, suggestBestPackage, MAX_PACKAGE_GESTURES } from './simulate';
 export type { SimulationResult, PackageSuggestion } from './simulate';
