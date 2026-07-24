@@ -62,9 +62,9 @@
  *     era-based NYC model (steam/fuel oil pre-war, gas post-war, AC common
  *     post-1960). For LL84 rows the dominant heating energy is REAL (fuel mix).
  *   - comfort.dh2025/dh2050/dh2100: no summer-comfort indicator exists in any
- *     source. Degree-hours of summer discomfort (without AC) are MODELLED for
- *     NYC's hot humid summers: base 1350 dh (2025), adjusted by inertia,
- *     glazing ratio and era, clamped to 900-1800. Climate horizons:
+ *     source. Degree-hours of summer discomfort (without AC) are MODELLED by
+ *     the shared model in scripts/comfort-model.mjs (inertia, glazing, era,
+ *     urban heat island, height, deterministic noise). Climate horizons:
  *     dh2050 = 1.45 x, dh2100 = 2.05 x (same warming factors as the FR model).
  *   - annualEnergyCostEur: NYC blended energy price ~ $0.15/kWh (documented
  *     rough average; field holds USD on the US branch despite the name).
@@ -78,6 +78,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { computeComfort, calibrateBase } from './comfort-model.mjs';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -304,23 +305,11 @@ function coolingFor(year, floors, usage) {
 
 // ---------------------------------------------------------------------------
 // MODELLED summer comfort — NOT measured in any NYC source (see header).
-// Base 1350 dh (2025) for NYC hot humid summers, modulated by inertia, glazing
-// and era, clamped to the 900-1800 band given in the brief. Warming horizons
-// x1.45 (2050) and x2.05 (2100), same factors as the FR pipeline.
+// Shared model in scripts/comfort-model.mjs: per-city median base, modulated
+// by inertia, glazing ratio, solar protection, era, urban heat island
+// (distance to region centre), height and a deterministic per-building noise.
+// Warming horizons x1.45 (2050) and x2.05 (2100), same factors as the FR pipeline.
 // ---------------------------------------------------------------------------
-function modelComfort({ inertia, glazingRatio, constructionYear }) {
-  let dh = 1350;
-  dh *= inertia === 'lourde' ? 0.8 : inertia === 'legere' ? 1.2 : 1.0;
-  dh *= 0.85 + glazingRatio; // more glass -> more solar gain
-  if (constructionYear < 1945) dh *= 1.1;  // leaky pre-war envelopes
-  if (constructionYear >= 2011) dh *= 0.85; // modern energy codes
-  dh = Math.min(1800, Math.max(900, dh));
-  return {
-    dh2025: Math.round(dh),
-    dh2050: Math.round(dh * 1.45),
-    dh2100: Math.round(dh * 2.05),
-  };
-}
 
 /** Shoelace centroid of the largest polygon ring of a WGS84 MultiPolygon. */
 function centroidOfMultiPolygon(geom) {
@@ -644,7 +633,7 @@ async function main() {
         pvSurfaceM2: 0,
       },
       certificate: { label, ep, ges, gesLabel },
-      comfort: modelComfort({ inertia: era.inertia, glazingRatio, constructionYear: c.year }),
+      comfort: null, // shared model applied below (needs id + full stock for base calibration)
       annualConsumptionKwhEp: annualConsumption,
       annualGesKgCo2: Math.round(ges * livingArea),
       // $0.15/kWh documented NYC blended energy price; field holds USD on the US branch.
@@ -653,6 +642,12 @@ async function main() {
       _heatingReal: heatingReal,
     };
   });
+
+  // Shared comfort model: first pass with the default base, calibrate the base
+  // to the median of the modelled stock, then recompute deterministically.
+  for (const b of buildings) b.comfort = computeComfort(b, 'us');
+  calibrateBase('us', buildings);
+  for (const b of buildings) b.comfort = computeComfort(b, 'us');
 
   // Final validation: 0 entries outside the Manhattan bbox.
   const outOfBounds = buildings.filter(

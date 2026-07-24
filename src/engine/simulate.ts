@@ -21,6 +21,7 @@ import {
   evaluateApplicability,
   paybackYears,
   rankGestures,
+  scaledImpacts,
   type EngineOptions,
 } from './scenarios';
 
@@ -92,10 +93,11 @@ export function simulateScenario(
   let dhKeep = 1;
   let totalCost = 0;
   for (const g of picked) {
-    epKeep *= 1 - g.epSavingPct;
-    gesKeep *= 1 - g.gesSavingPct;
-    dhKeep *= 1 - g.dhReductionPct;
-    totalCost += estimateCost(building, g);
+    const impact = scaledImpacts(building, g, profile);
+    epKeep *= 1 - impact.epSavingPct;
+    gesKeep *= 1 - impact.gesSavingPct;
+    dhKeep *= 1 - impact.dhReductionPct;
+    totalCost += estimateCost(building, g, profile);
   }
 
   const epReduction = Math.min(1 - epKeep, MAX_COMBINED_REDUCTION);

@@ -53,15 +53,19 @@ Champs **modélisés** (non mesurés par la BDNB) :
 
 Les CSV sources vivent hors du dépôt (`../BDNB/csv`) et ne sont pas versionnés.
 
-## Stratégie de branches
+## Régions en ligne
 
-- `main` — France (BDNB, DPE, €)
-- `uk` — Royaume-Uni (EPC register, £)
-- `usa` — États-Unis (HERS Index, $)
+- `fr` — France · Alpes-Maritimes 06 (BDNB, DPE, €)
+- `uk` — Royaume-Uni · Londres (EPC register, £)
+- `us` — États-Unis · New York (LL84 / PLUTO, $)
+- `nl` — Pays-Bas · Randstad (PDOK BAG, Energielabel, €) — bâtiments réels
+  BAG (adresses, bouwjaar, surfaces) ; étiquettes énergie et attributs
+  d'enveloppe modélisés en attendant une clé API EP-online, confort d'été
+  modélisé (proxy TOjuli).
 
-Chaque branche remplace `src/config/country.ts`, le corpus réglementaire
-(`src/content/`) et le jeu de données, sans modifier le contrat partagé
-`src/types/index.ts`.
+Le registre `src/regions/index.ts` pilote le sélecteur de pays, le chargement
+des données (`public/data/*.json`) et les contenus de chaque région, sans
+modifier le contrat partagé `src/types/index.ts`.
 
 ## Déploiement
 

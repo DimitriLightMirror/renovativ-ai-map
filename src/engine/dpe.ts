@@ -12,8 +12,8 @@
 
 import type { EnergyLabel } from '../types';
 
-/** Profil de bandes : fr (DPE), uk (EPC), us (HERS). */
-export type EngineProfile = 'fr' | 'uk' | 'us';
+/** Profil de bandes : fr (DPE), uk (EPC), us (HERS), nl (Energielabel). */
+export type EngineProfile = 'fr' | 'uk' | 'us' | 'nl';
 
 const LABELS: EnergyLabel[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
@@ -29,10 +29,14 @@ const EP_THRESHOLDS_UK: readonly number[] = [45, 90, 140, 190, 260, 340];
 /** Bandes style HERS pour New York, kWh/m2/an. */
 const EP_THRESHOLDS_US: readonly number[] = [55, 70, 85, 100, 115, 130];
 
+/** Bandes Energielabel Pays-Bas (echelle A+++..G repliee sur A..G), kWh/m2/an. */
+const EP_THRESHOLDS_NL: readonly number[] = [120, 165, 205, 250, 300, 360];
+
 const EP_THRESHOLDS_BY_PROFILE: Record<EngineProfile, readonly number[]> = {
   fr: EP_THRESHOLDS_FR,
   uk: EP_THRESHOLDS_UK,
   us: EP_THRESHOLDS_US,
+  nl: EP_THRESHOLDS_NL,
 };
 
 /** Bornes visuelles de la jauge A..G par profil (derniere borne = plafond). */
@@ -40,6 +44,7 @@ const GAUGE_BOUNDS_BY_PROFILE: Record<EngineProfile, readonly number[]> = {
   fr: [0, 70, 110, 180, 250, 330, 420, 560],
   uk: [0, 45, 90, 140, 190, 260, 340, 450],
   us: [0, 55, 70, 85, 100, 115, 130, 180],
+  nl: [0, 120, 165, 205, 250, 300, 360, 470],
 };
 
 /** Couleurs officielles de l'echelle, de A (vert) a G (rouge). */

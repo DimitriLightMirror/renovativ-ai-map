@@ -70,8 +70,8 @@
  *     - glazingRatio (0.15-0.25 seeded), solarProtection (false — not recorded
  *       in EPC and rare in UK stock), wall insulation POSITION (internal vs
  *       external is not recorded; "insulated" walls map to 'iti').
- *     - comfort (summer degree-hours): London temperate-maritime model,
- *       dh2025 base 750 modulated by inertia/glazing/era, clamped 400-1100;
+ *     - comfort (summer degree-hours): shared model in scripts/comfort-model.mjs
+ *       (per-city median base; inertia/glazing/era/UHI/height/noise);
  *       dh2050 = 1.5 x, dh2100 = 2.2 x (project climate warming factors).
  *     - certificate.ep bands: we keep the REAL EPC A-G band for label; ep is
  *       the real kWh/m2/yr figure. (The A<=45..G>340 kWh/m2/an band scale from
@@ -85,6 +85,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { computeComfort, calibrateBase } from './comfort-model.mjs';
 
 const API_BASE = 'https://api.get-energy-performance-data.communities.gov.uk';
 const OUT_FILE = path.resolve('public/data/uk-london.json');
@@ -293,17 +294,9 @@ function labelFromGes(ges) {
   return 'G';
 }
 
-// MODELLED summer comfort (see header): London temperate-maritime base,
-// clamped to the project London band 400-1100; horizons x1.5 (2050), x2.2 (2100).
-function modelComfort({ inertia, glazingRatio, solarProtection, year }) {
-  let dh = 750;
-  dh *= inertia === 'lourde' ? 0.75 : inertia === 'legere' ? 1.25 : 1.0;
-  dh *= 0.85 + glazingRatio;
-  if (solarProtection) dh *= 0.85;
-  if (year >= 2013) dh *= 0.85;
-  dh = Math.min(1100, Math.max(400, dh));
-  return { dh2025: Math.round(dh), dh2050: Math.round(dh * 1.5), dh2100: Math.round(dh * 2.2) };
-}
+// MODELLED summer comfort (see header): shared model in scripts/comfort-model.mjs
+// (per-city median base; inertia, glazing, protection, era, urban heat island,
+// height, deterministic noise); horizons x1.5 (2050), x2.2 (2100).
 
 // Deterministic display offset: <= 60 m from the postcode centroid, keyed on
 // the certificate number. 1 deg lat ~ 111320 m; lng scaled by cos(51.5 deg).
@@ -542,7 +535,7 @@ function stageEmit(cache) {
         pvSurfaceM2: 0,
       },
       certificate: { label, ep, ges, gesLabel: labelFromGes(ges) },
-      comfort: modelComfort({ inertia, glazingRatio, solarProtection, year }),
+      comfort: null, // shared model applied after ids are assigned (base calibration needs full stock)
       annualConsumptionKwhEp: Math.round(ep * livingArea),
       annualGesKgCo2: Number.isFinite(co2Tonnes) && co2Tonnes > 0 ? Math.round(co2Tonnes * 1000) : Math.round(ges * livingArea),
       annualEnergyCostEur: annualCost, // GBP despite field name (contract note)
@@ -550,6 +543,12 @@ function stageEmit(cache) {
   }
 
   buildings.forEach((b, i) => { b.id = `bld-uk-${String(i + 1).padStart(5, '0')}`; });
+
+  // Shared comfort model: first pass with the default base, calibrate the base
+  // to the median of the modelled stock, then recompute deterministically.
+  for (const b of buildings) b.comfort = computeComfort(b, 'uk');
+  calibrateBase('uk', buildings);
+  for (const b of buildings) b.comfort = computeComfort(b, 'uk');
 
   fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
   fs.writeFileSync(OUT_FILE, JSON.stringify(buildings));

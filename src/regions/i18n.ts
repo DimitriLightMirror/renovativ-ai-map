@@ -372,3 +372,16 @@ const DICTS: Record<RegionLanguage, ChromeStrings> = { fr, en };
 export function stringsFor(language: RegionLanguage): ChromeStrings {
   return DICTS[language];
 }
+
+// ---------------------------------------------------------------------------
+// Ajout (I1_Scenario_Costs) : note de dimensionnement des pompes a chaleur.
+// Append uniquement, aucune cle existante modifiee.
+// ---------------------------------------------------------------------------
+
+/** Note affichee sous le cout d'un geste PAC : puissance dimensionnee sur le batiment. */
+export function heatPumpSizingNote(language: RegionLanguage, capacityKW: number): string {
+  const kw = Math.round(capacityKW);
+  return language === 'fr'
+    ? `PAC dimensionnée sur ~${kw} kW pour ce bâtiment`
+    : `Heat pump sized at ~${kw} kW for this building`;
+}

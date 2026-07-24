@@ -12,9 +12,11 @@
 import type {
   Building,
   EnergyLabel,
+  HeatingEnergy,
   OptimizationObjective,
   RenovationGesture,
   ScenarioResult,
+  UsageType,
 } from '../types';
 import { GESTURES_FR } from '../content/gestures-fr';
 import { labelFromIndicators, type EngineProfile } from './dpe';
@@ -150,24 +152,141 @@ export function evaluateApplicability(
 }
 
 // ---------------------------------------------------------------------------
+// Surfaces d'enveloppe derivees de la geometrie
+// ---------------------------------------------------------------------------
+
+export interface EnvelopeSurfaces {
+  wallAreaM2: number;
+  roofAreaM2: number;
+  floorAreaM2: number;
+  glazingAreaM2: number;
+}
+
+const clampNum = (v: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, v));
+
+/**
+ * Surfaces de reference calculees depuis la geometrie du batiment :
+ * murs = perimetre (approximation carree) x hauteur x 0,75 (ouvertures),
+ * toiture et plancher = emprise au sol, vitrage = ratio x surface habitable.
+ * En collectif, les murs sont reduits de 20 % (mitoyennete).
+ */
+export function envelopeSurfaces(building: Building): EnvelopeSurfaces {
+  const footprint = Math.max(1, building.footprintAreaM2);
+  const perimeter = 4 * Math.sqrt(footprint);
+  let wallAreaM2 = perimeter * building.heightM * 0.75;
+  if (building.usage === 'residential_collective') {
+    wallAreaM2 *= 0.8;
+  }
+  return {
+    wallAreaM2,
+    roofAreaM2: footprint,
+    floorAreaM2: footprint,
+    glazingAreaM2: Math.max(8, building.livingAreaM2 * building.envelope.glazingRatio),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Dimensionnement et cout capacitaire des pompes a chaleur
+// ---------------------------------------------------------------------------
+
+/** Heures equivalent pleine charge du chauffage, par region. */
+const FULL_LOAD_HOURS: Record<EngineProfile, number> = {
+  fr: 2000,
+  uk: 2000,
+  nl: 2000,
+  us: 1800,
+};
+
+/** Prix installe par kW de puissance PAC, en devise de la region. */
+const HEAT_PUMP_PRICE_PER_KW: Record<EngineProfile, number> = {
+  fr: 900,
+  uk: 950,
+  nl: 1000,
+  us: 1000,
+};
+
+/** Repere les gestes "pompe a chaleur" du lot chauffage (id ou nom). */
+const HEAT_PUMP_PATTERN = /pac|heat[-_\s]?pump|warmtepomp|pompe/i;
+
+/** Vrai si le geste est une pompe a chaleur (lot chauffage uniquement). */
+export function isHeatPumpGesture(gesture: RenovationGesture): boolean {
+  return (
+    gesture.lot === 'chauffage' &&
+    (HEAT_PUMP_PATTERN.test(gesture.id) || HEAT_PUMP_PATTERN.test(gesture.name))
+  );
+}
+
+/** Multiplicateur d'installation selon l'archetype de batiment. */
+function archetypeMultiplier(usage: UsageType): number {
+  switch (usage) {
+    case 'residential_individual':
+      return 0.85; // installation mono simple
+    case 'residential_collective':
+      return 1.15; // hydraulique et chaufferie collective
+    default:
+      return 1.1; // tertiaire
+  }
+}
+
+/**
+ * Puissance de PAC dimensionnee sur le batiment :
+ * consommation annuelle (ep x surface) divisee par les heures pleine charge,
+ * bornee a 4..30 kW en residentiel et 4..200 kW en tertiaire.
+ */
+export function heatPumpCapacityKw(building: Building, profile: EngineProfile = 'fr'): number {
+  const hours = FULL_LOAD_HOURS[profile];
+  const raw = (building.certificate.ep * building.livingAreaM2) / hours;
+  const isTertiary =
+    building.usage !== 'residential_individual' &&
+    building.usage !== 'residential_collective';
+  return clampNum(raw, 4, isTertiary ? 200 : 30);
+}
+
+export interface CapacityCostDetail {
+  capacityKW: number;
+  pricePerKW: number;
+  multiplier: number;
+  fixedPart: number;
+  total: number;
+}
+
+/**
+ * Cout capacitaire d'une PAC : (partie fixe + kW x prix/kW) x multiplicateur
+ * d'archetype. Retourne null si le geste n'est pas une pompe a chaleur.
+ */
+export function heatPumpCost(
+  building: Building,
+  gesture: RenovationGesture,
+  profile: EngineProfile = 'fr',
+): CapacityCostDetail | null {
+  if (!isHeatPumpGesture(gesture)) return null;
+  const capacityKW = heatPumpCapacityKw(building, profile);
+  const pricePerKW = HEAT_PUMP_PRICE_PER_KW[profile];
+  const multiplier = archetypeMultiplier(building.usage);
+  const fixedPart = gesture.fixedCost ?? 2500;
+  const total = Math.round((fixedPart + capacityKW * pricePerKW) * multiplier);
+  return { capacityKW, pricePerKW, multiplier, fixedPart, total };
+}
+
+// ---------------------------------------------------------------------------
 // Couts
 // ---------------------------------------------------------------------------
 
 /** Surface de reference pour le cout au m2, selon le lot du geste. */
 export function relevantSurface(building: Building, gesture: RenovationGesture): number {
-  // Surface vitree estimee, avec un plancher de 8 m2 pour les petits batiments.
-  const glazingArea = Math.max(8, building.livingAreaM2 * building.envelope.glazingRatio);
+  const surfaces = envelopeSurfaces(building);
   switch (gesture.lot) {
     case 'murs':
-      return building.livingAreaM2;
+      return surfaces.wallAreaM2;
     case 'toiture':
-      return building.footprintAreaM2;
+      return surfaces.roofAreaM2;
     case 'plancher':
-      return building.footprintAreaM2;
+      return surfaces.floorAreaM2;
     case 'baies':
-      return glazingArea;
+      return surfaces.glazingAreaM2;
     case 'protections_solaires':
-      return glazingArea;
+      return surfaces.glazingAreaM2;
     case 'chauffage':
     case 'ecs':
     case 'refroidissement':
@@ -181,9 +300,132 @@ export function relevantSurface(building: Building, gesture: RenovationGesture):
   }
 }
 
-/** Cout estime : cout fixe + cout au m2 x surface de reference. */
-export function estimateCost(building: Building, gesture: RenovationGesture): number {
+/**
+ * Cout estime : pricing capacitaire pour les pompes a chaleur,
+ * sinon cout fixe + cout au m2 x surface de reference.
+ */
+export function estimateCost(
+  building: Building,
+  gesture: RenovationGesture,
+  profile: EngineProfile = 'fr',
+): number {
+  const capacity = heatPumpCost(building, gesture, profile);
+  if (capacity) return capacity.total;
   return (gesture.fixedCost ?? 0) + (gesture.costPerM2 ?? 0) * relevantSurface(building, gesture);
+}
+
+// ---------------------------------------------------------------------------
+// Impacts ajustes au batiment
+// ---------------------------------------------------------------------------
+
+export interface GestureImpacts {
+  epSavingPct: number;
+  gesSavingPct: number;
+  dhReductionPct: number;
+}
+
+/** U de reference par lot d'enveloppe ; null hors enveloppe. */
+function refUForLot(gesture: RenovationGesture): number | null {
+  switch (gesture.lot) {
+    case 'murs':
+    case 'toiture':
+      return 1.0;
+    case 'plancher':
+      return 1.2;
+    default:
+      return null;
+  }
+}
+
+/** U actuel du batiment pour le lot d'enveloppe du geste. */
+function currentUForLot(building: Building, gesture: RenovationGesture): number {
+  switch (gesture.lot) {
+    case 'murs':
+      return building.envelope.uWall;
+    case 'toiture':
+      return building.envelope.uRoof;
+    default:
+      return building.envelope.uFloor;
+  }
+}
+
+/** Facteur d'impact des baies selon le vitrage actuel. */
+const GLAZING_EP_FACTOR: Record<string, number> = {
+  simple: 1.3,
+  double: 1.0,
+  double_renouvele: 0.8,
+  triple: 0.6,
+};
+
+/**
+ * Facteur carbone du combustible actuel : remplacer un fioul sale compte
+ * davantage que remplacer du bois. L'electricite est sobre en carbone en
+ * France (reseau bas carbone) mais pas en uk/us/nl.
+ */
+function fuelCarbonFactor(energy: HeatingEnergy, profile: EngineProfile): number {
+  switch (energy) {
+    case 'fioul':
+      return 1.2;
+    case 'gaz_naturel':
+      return 1.0;
+    case 'reseau_chaleur':
+      return 0.8;
+    case 'bois':
+      return 0.5;
+    case 'electricite':
+      return profile === 'fr' ? 0.4 : 1.0;
+    case 'pac':
+      return 0.1;
+    default:
+      return 1.0;
+  }
+}
+
+/**
+ * Geste de substitution de generateur : son applicabilite depend de
+ * l'energie de chauffage actuelle (contrairement aux gestes d'accompagnement
+ * comme les emetteurs basse temperature).
+ */
+function isFuelSwapGesture(gesture: RenovationGesture): boolean {
+  return (
+    gesture.lot === 'chauffage' && gesture.applicableWhen.includes('systems.heating.energy')
+  );
+}
+
+/**
+ * Impacts du geste ajustes aux caracteristiques du batiment :
+ * - enveloppe : epSaving x clamp(U actuel / U de reference, 0.4, 1.6) ;
+ * - baies : epSaving x facteur du vitrage actuel ;
+ * - substitution de chauffage : gesSaving x facteur carbone du combustible
+ *   actuel, epSaving x clamp(ep / 250, 0.5, 1.8).
+ */
+export function scaledImpacts(
+  building: Building,
+  gesture: RenovationGesture,
+  profile: EngineProfile = 'fr',
+): GestureImpacts {
+  let { epSavingPct, gesSavingPct } = gesture;
+  const { dhReductionPct } = gesture;
+
+  const refU = refUForLot(gesture);
+  if (refU !== null) {
+    epSavingPct *= clampNum(currentUForLot(building, gesture) / refU, 0.4, 1.6);
+  }
+
+  if (gesture.lot === 'baies') {
+    epSavingPct *= GLAZING_EP_FACTOR[building.envelope.glazingType] ?? 1.0;
+  }
+
+  if (isFuelSwapGesture(gesture)) {
+    gesSavingPct *= fuelCarbonFactor(building.systems.heating.energy, profile);
+    epSavingPct *= clampNum(building.certificate.ep / 250, 0.5, 1.8);
+  }
+
+  return {
+    epSavingPct: clampNum(epSavingPct, 0, 0.95),
+    gesSavingPct: clampNum(gesSavingPct, 0, 0.95),
+    dhReductionPct,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -203,19 +445,22 @@ export function combineWithRequires(
   building: Building,
   gesture: RenovationGesture,
   allGestures: RenovationGesture[],
+  profile: EngineProfile = 'fr',
 ): CombinedImpact {
-  let epKeep = 1 - gesture.epSavingPct;
-  let gesKeep = 1 - gesture.gesSavingPct;
-  let dhKeep = 1 - gesture.dhReductionPct;
-  let totalCost = estimateCost(building, gesture);
+  const own = scaledImpacts(building, gesture, profile);
+  let epKeep = 1 - own.epSavingPct;
+  let gesKeep = 1 - own.gesSavingPct;
+  let dhKeep = 1 - own.dhReductionPct;
+  let totalCost = estimateCost(building, gesture, profile);
 
   for (const reqId of gesture.requiresGestureIds) {
     const req = allGestures.find((g) => g.id === reqId);
     if (!req) continue;
-    epKeep *= 1 - req.epSavingPct;
-    gesKeep *= 1 - req.gesSavingPct;
-    dhKeep *= 1 - req.dhReductionPct;
-    totalCost += estimateCost(building, req);
+    const reqImpact = scaledImpacts(building, req, profile);
+    epKeep *= 1 - reqImpact.epSavingPct;
+    gesKeep *= 1 - reqImpact.gesSavingPct;
+    dhKeep *= 1 - reqImpact.dhReductionPct;
+    totalCost += estimateCost(building, req, profile);
   }
 
   return {
@@ -271,7 +516,7 @@ export function rankGestures(
   const { gestures, energyPrice, profile } = resolveOptions(options);
   const results: ScenarioResult[] = gestures.map((gesture) => {
     const check = evaluateApplicability(building, gesture);
-    const impact = combineWithRequires(building, gesture, gestures);
+    const impact = combineWithRequires(building, gesture, gestures, profile);
 
     const newEp = building.certificate.ep * (1 - impact.epSavingPct);
     const newGes = building.certificate.ges * (1 - impact.gesSavingPct);

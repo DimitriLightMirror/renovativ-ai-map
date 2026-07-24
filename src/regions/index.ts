@@ -19,8 +19,11 @@ import { HEATWAVE_RECS_UK } from '../content/heatwave-uk';
 import { REGULATION_US } from '../content/regulation-us';
 import { GESTURES_US } from '../content/gestures-us';
 import { HEATWAVE_RECS_US } from '../content/heatwave-us';
+import { REGULATION_NL } from '../content/regulation-nl';
+import { GESTURES_NL } from '../content/gestures-nl';
+import { HEATWAVE_RECS_NL } from '../content/heatwave-nl';
 
-export type RegionId = 'fr' | 'uk' | 'us';
+export type RegionId = 'fr' | 'uk' | 'us' | 'nl';
 export type RegionLanguage = 'fr' | 'en';
 
 export interface RegionContent {
@@ -128,6 +131,29 @@ export const REGIONS: RegionConfig[] = [
       regulation: REGULATION_US,
       gestures: GESTURES_US,
       heatwave: HEATWAVE_RECS_US,
+    },
+  },
+  {
+    id: 'nl',
+    name: 'Pays-Bas · Randstad',
+    shortName: 'Pays-Bas',
+    language: 'en',
+    locale: 'en-NL',
+    mapCenter: [52.15, 4.65],
+    mapZoom: 9,
+    certificateName: 'Energielabel',
+    certificateShortName: 'Energielabel',
+    currencySymbol: '€',
+    energyPrice: 0.25,
+    engineProfile: 'nl',
+    dataUrl: `${base}data/nl.json`,
+    sourceName: 'PDOK BAG',
+    disclaimer:
+      'Real BAG buildings (addresses, bouwjaar, areas) from PDOK. Energielabels and envelope/system attributes are modelled pending an EP-online API key; summer comfort is modelled (TOjuli proxy).',
+    content: {
+      regulation: REGULATION_NL,
+      gestures: GESTURES_NL,
+      heatwave: HEATWAVE_RECS_NL,
     },
   },
 ];

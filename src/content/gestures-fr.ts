@@ -281,7 +281,9 @@ export const GESTURES_FR: RenovationGesture[] = [
     lot: 'chauffage',
     mode: 'simple',
     description:
-      'Remplacement du générateur par une pompe à chaleur air/eau raccordée sur l’émetteur existant. Divise par deux à trois la consommation de chauffage et sort le bâtiment des énergies fossiles. Forfait pose comprise.',
+      'Remplacement du générateur par une pompe à chaleur air/eau raccordée sur l’émetteur existant. Divise par deux à trois la consommation de chauffage et sort le bâtiment des énergies fossiles. Partie fixe pose comprise, majorée selon la puissance dimensionnée sur le bâtiment.',
+    // Pricing capacitaire : le moteur calcule fixedCost + kW x prix/kW,
+    // avec la puissance dimensionnée sur le bâtiment (voir scenarios.ts).
     fixedCost: 12000,
     epSavingPct: 0.5,
     gesSavingPct: 0.75,
@@ -296,8 +298,10 @@ export const GESTURES_FR: RenovationGesture[] = [
     lot: 'chauffage',
     mode: 'detail',
     description:
-      'Unités intérieures murales qui chauffent l’hiver et rafraîchissent l’été. Pertinente en remplacement de convecteurs électriques. Coût par m² de surface habitable.',
-    costPerM2: 95,
+      'Unités intérieures murales qui chauffent l’hiver et rafraîchissent l’été. Pertinente en remplacement de convecteurs électriques. Partie fixe par logement, majorée selon la puissance installée.',
+    // Pricing capacitaire : le moteur calcule fixedCost + kW x prix/kW,
+    // avec la puissance dimensionnée sur le bâtiment (voir scenarios.ts).
+    fixedCost: 4500,
     epSavingPct: 0.4,
     gesSavingPct: 0.7,
     dhReductionPct: 0.3,

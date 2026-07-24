@@ -251,7 +251,9 @@ export const GESTURES_US: RenovationGesture[] = [
     lot: 'chauffage',
     mode: 'simple',
     description:
-      'Cold-climate rated ducted heat pump replacing the furnace and air conditioner. Cuts heating energy by half or more, ends on-site fossil fuel combustion and provides efficient cooling. Installed cost for a typical home.',
+      'Cold-climate rated ducted heat pump replacing the furnace and air conditioner. Cuts heating energy by half or more, ends on-site fossil fuel combustion and provides efficient cooling. Fixed part plus capacity pricing per kW installed.',
+    // Capacity pricing: the engine computes fixedCost + kW x price per kW,
+    // with capacity sized on the building (see scenarios.ts).
     fixedCost: 12000,
     epSavingPct: 0.45,
     gesSavingPct: 0.65,
@@ -266,7 +268,9 @@ export const GESTURES_US: RenovationGesture[] = [
     lot: 'chauffage',
     mode: 'detail',
     description:
-      'Wall-mounted indoor units that heat in winter and cool in summer, no ducts required. The right fit for homes with baseboard heat or window units. Installed cost for a typical home.',
+      'Wall-mounted indoor units that heat in winter and cool in summer, no ducts required. The right fit for homes with baseboard heat or window units. Fixed part plus capacity pricing per kW installed.',
+    // Capacity pricing: the engine computes fixedCost + kW x price per kW,
+    // with capacity sized on the building (see scenarios.ts).
     fixedCost: 6500,
     epSavingPct: 0.35,
     gesSavingPct: 0.55,
@@ -281,7 +285,9 @@ export const GESTURES_US: RenovationGesture[] = [
     lot: 'chauffage',
     mode: 'detail',
     description:
-      'Ground-source heat pump with a vertical or horizontal loop field. The highest-efficiency heating and cooling option, with a 30 percent federal tax credit under section 25D. Installed cost for a typical home.',
+      'Ground-source heat pump with a vertical or horizontal loop field. The highest-efficiency heating and cooling option, with a 30 percent federal tax credit under section 25D. Fixed part plus capacity pricing per kW installed.',
+    // Capacity pricing: the engine computes fixedCost + kW x price per kW,
+    // with capacity sized on the building (see scenarios.ts).
     fixedCost: 30000,
     epSavingPct: 0.5,
     gesSavingPct: 0.7,

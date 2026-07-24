@@ -25,9 +25,9 @@
  *
  * IMPORTANT — modelled (not BDNB-measured) fields:
  *   - comfort.dh2025/dh2050/dh2100: no summer-comfort indicator table exists in
- *     this BDNB export. Degree-hours of summer discomfort are MODELLED from a
- *     Mediterranean hot-summer base (~1600 dh for dept 06), adjusted by
- *     inertia, glazing ratio, solar protection and construction era.
+ *     this BDNB export. Degree-hours of summer discomfort are MODELLED by the
+ *     shared model in scripts/comfort-model.mjs (inertia, glazing, solar
+ *     protection, era, urban heat island, height, deterministic noise).
  *     dh2050 = 1.45 x dh2025, dh2100 = 2.05 x dh2025 (climate warming factors).
  *   - buildings without a DPE get an era-based certificate estimate
  *     (marked by construction-year defaults; real DPE rows always win the cap).
@@ -39,6 +39,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { createRequire } from 'node:module';
+import { computeComfort, calibrateBase } from './comfort-model.mjs';
 
 const require = createRequire(import.meta.url);
 const proj4 = require('proj4');
@@ -330,25 +331,11 @@ function mapInertia(dpeInertia, wallMaterial) {
 
 // ---------------------------------------------------------------------------
 // MODELLED summer comfort — NOT a BDNB measurement.
-// This export contains no "confort d'été" indicator table, so degree-hours of
-// summer discomfort are estimated: Mediterranean hot-summer base for dept 06
-// (~1600 dh in 2025), modulated by inertia (heavy mass buffers heat), glazing
-// ratio (solar gains), external solar protection, and construction era.
-// Climate horizons: dh2050 = 1.45 x, dh2100 = 2.05 x (warming amplification).
+// Shared model in scripts/comfort-model.mjs: per-city median base, modulated
+// by inertia, glazing ratio, solar protection, construction era, urban heat
+// island (distance to region centre), height and a deterministic per-building
+// noise. Climate horizons: dh2050 = 1.45 x, dh2100 = 2.05 x.
 // ---------------------------------------------------------------------------
-function modelComfort({ inertia, glazingRatio, solarProtection, constructionYear }) {
-  let dh = 1600;
-  dh *= inertia === 'lourde' ? 0.75 : inertia === 'legere' ? 1.25 : 1.0;
-  dh *= 0.8 + glazingRatio; // more glass -> more solar gain
-  if (solarProtection) dh *= 0.85;
-  if (constructionYear >= 2013) dh *= 0.85; // RT2012 summer requirements
-  dh = Math.min(3500, Math.max(400, dh));
-  return {
-    dh2025: Math.round(dh),
-    dh2050: Math.round(dh * 1.45),
-    dh2100: Math.round(dh * 2.05),
-  };
-}
 
 // kgCO2 per kWhEP, rough French content factors for era-based GES estimates.
 const GES_FACTOR = {
@@ -618,7 +605,7 @@ async function main() {
         pvSurfaceM2: 0,
       },
       certificate: { label, ep, ges, gesLabel },
-      comfort: modelComfort({ inertia, glazingRatio, solarProtection, constructionYear: year }),
+      comfort: null, // shared model applied after selection (needs id + full stock for base calibration)
       annualConsumptionKwhEp: annualConsumption,
       annualGesKgCo2: Math.round(ges * livingArea),
       annualEnergyCostEur: Math.round(annualConsumption * 0.15),
@@ -637,6 +624,12 @@ async function main() {
   const buildings = [];
   for (const { dpe, noDpe } of kept.values()) buildings.push(...dpe, ...noDpe);
   buildings.forEach((b, i) => { b.id = `bld-${String(i + 1).padStart(5, '0')}`; });
+
+  // Shared comfort model: first pass with the default base, calibrate the base
+  // to the median of the modelled stock, then recompute deterministically.
+  for (const b of buildings) b.comfort = computeComfort(b, 'fr');
+  calibrateBase('fr', buildings);
+  for (const b of buildings) b.comfort = computeComfort(b, 'fr');
 
   fs.writeFileSync(OUT_FILE, JSON.stringify(buildings));
 

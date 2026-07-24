@@ -281,7 +281,9 @@ export const GESTURES_UK: RenovationGesture[] = [
     lot: 'chauffage',
     mode: 'simple',
     description:
-      'Replacement of the boiler by an air source heat pump connected to the existing emitters. Cuts heating energy by two to three and takes the home off fossil fuels. Fixed price, installation included.',
+      'Replacement of the boiler by an air source heat pump connected to the existing emitters. Cuts heating energy by two to three and takes the home off fossil fuels. Fixed part plus capacity pricing per kW installed.',
+    // Capacity pricing: the engine computes fixedCost + kW x price per kW,
+    // with capacity sized on the building (see scenarios.ts).
     fixedCost: 10500,
     epSavingPct: 0.5,
     gesSavingPct: 0.75,
@@ -296,8 +298,10 @@ export const GESTURES_UK: RenovationGesture[] = [
     lot: 'chauffage',
     mode: 'detail',
     description:
-      'Wall-mounted indoor units that heat in winter and cool in summer. A good replacement for panel or storage heaters. Cost per m² of living area.',
-    costPerM2: 90,
+      'Wall-mounted indoor units that heat in winter and cool in summer. A good replacement for panel or storage heaters. Fixed part per home plus capacity pricing per kW installed.',
+    // Capacity pricing: the engine computes fixedCost + kW x price per kW,
+    // with capacity sized on the building (see scenarios.ts).
+    fixedCost: 4000,
     epSavingPct: 0.4,
     gesSavingPct: 0.7,
     dhReductionPct: 0.3,

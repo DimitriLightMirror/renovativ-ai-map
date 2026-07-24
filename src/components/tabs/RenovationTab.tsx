@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { Building, OptimizationObjective, ScenarioResult } from '../../types';
 import type { RegionConfig } from '../../regions';
-import { stringsFor } from '../../regions/i18n';
+import { stringsFor, heatPumpSizingNote } from '../../regions/i18n';
 import { rankGestures, suggestBestPackage, type EngineOptions } from '../../engine';
+import { heatPumpCapacityKw, isHeatPumpGesture } from '../../engine/scenarios';
 import RegulationCard from '../RegulationCard';
 import {
   formatCurrency,
@@ -19,7 +20,16 @@ interface RenovationTabProps {
 const OBJECTIVE_KEYS = ['comfort', 'energy', 'carbon', 'cost'] as const;
 
 /** Graphique de chapelet : les 10 meilleurs gestes applicables, barres en SVG. */
-function Chapelet({ results, ariaLabel }: { results: ScenarioResult[]; ariaLabel: string }) {
+function Chapelet({
+  results,
+  ariaLabel,
+  sizingKw,
+}: {
+  results: ScenarioResult[];
+  ariaLabel: string;
+  /** Puissance PAC en kW pour le geste, null si le geste n'est pas une PAC. */
+  sizingKw: (gestureId: string) => number | null;
+}) {
   const width = 340;
   const rowHeight = 30;
   const nameWidth = 128;
@@ -39,6 +49,7 @@ function Chapelet({ results, ariaLabel }: { results: ScenarioResult[]; ariaLabel
         const w = Math.max(3, (r.score / maxScore) * barWidth);
         const name =
           r.gesture.name.length > 24 ? `${r.gesture.name.slice(0, 23)}…` : r.gesture.name;
+        const kw = sizingKw(r.gesture.id);
         return (
           <g key={r.gesture.id}>
             <title>{`${r.gesture.name}. ${r.gesture.description} ${formatCurrency(
@@ -66,13 +77,24 @@ function Chapelet({ results, ariaLabel }: { results: ScenarioResult[]; ariaLabel
             </text>
             <text
               x={width}
-              y={y + 18}
+              y={y + (kw !== null ? 12 : 18)}
               fontSize="10"
               textAnchor="end"
               fill="#5a5a5a"
             >
               {formatCurrency(r.estimatedCost)}
             </text>
+            {kw !== null && (
+              <text
+                x={width}
+                y={y + 24}
+                fontSize="8"
+                textAnchor="end"
+                fill="#8a8a8a"
+              >
+                {`~${Math.round(kw)} kW`}
+              </text>
+            )}
           </g>
         );
       })}
@@ -108,6 +130,15 @@ export default function RenovationTab({ building, region }: RenovationTabProps) 
     .map((id) => region.content.gestures.find((g) => g.id === id))
     .filter((g): g is NonNullable<typeof g> => g !== undefined);
 
+  /** Puissance PAC dimensionnee sur ce batiment, null si le geste n'est pas une PAC. */
+  const sizingKw = (gestureId: string): number | null => {
+    const gesture = region.content.gestures.find((g) => g.id === gestureId);
+    if (!gesture || !isHeatPumpGesture(gesture)) return null;
+    return heatPumpCapacityKw(building, region.engineProfile);
+  };
+
+  const hpInTop = top.filter((r) => sizingKw(r.gesture.id) !== null);
+
   const items = region.content.regulation.filter(
     (r) => r.relevance.includes('renovation') || r.relevance.includes('funding'),
   );
@@ -134,7 +165,15 @@ export default function RenovationTab({ building, region }: RenovationTabProps) 
         <h3>{t.chapeletTitle}</h3>
         {top.length > 0 ? (
           <>
-            <Chapelet results={top} ariaLabel={t.chapeletAriaLabel} />
+            <Chapelet results={top} ariaLabel={t.chapeletAriaLabel} sizingKw={sizingKw} />
+            {hpInTop.map((r) => (
+              <p key={r.gesture.id} className="note">
+                {`${r.gesture.name} : ${heatPumpSizingNote(
+                  region.language,
+                  sizingKw(r.gesture.id) ?? 0,
+                )}`}
+              </p>
+            ))}
             <p className="note">{t.chapeletNote}</p>
           </>
         ) : (
@@ -147,12 +186,20 @@ export default function RenovationTab({ building, region }: RenovationTabProps) 
         {packGestures.length > 0 ? (
           <div className="card scenario-card">
             <ul className="scenario-card__gestures">
-              {packGestures.map((g) => (
-                <li key={g.id}>
-                  <strong>{g.name}</strong>
-                  <span className="scenario-card__lot">{lotLabel(g.lot)}</span>
-                </li>
-              ))}
+              {packGestures.map((g) => {
+                const kw = sizingKw(g.id);
+                return (
+                  <li key={g.id}>
+                    <strong>{g.name}</strong>
+                    <span className="scenario-card__lot">{lotLabel(g.lot)}</span>
+                    {kw !== null && (
+                      <span className="scenario-card__lot">
+                        {heatPumpSizingNote(region.language, kw)}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             <dl className="kv-list kv-list--compact">
               <div className="kv-list__row">
