@@ -196,6 +196,7 @@ const FULL_LOAD_HOURS: Record<EngineProfile, number> = {
   uk: 2000,
   nl: 2000,
   us: 1800,
+  dk: 2200, // climat danois plus froid, saison de chauffe plus longue
 };
 
 /** Prix installe par kW de puissance PAC, en devise de la region. */
@@ -204,6 +205,7 @@ const HEAT_PUMP_PRICE_PER_KW: Record<EngineProfile, number> = {
   uk: 950,
   nl: 1000,
   us: 1000,
+  dk: 7000, // DKK par kW (~940 EUR), cout d'installation comparable aux Pays-Bas
 };
 
 /** Repere les gestes "pompe a chaleur" du lot chauffage (id ou nom). */

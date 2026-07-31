@@ -4,6 +4,8 @@
  * la classe finale est la plus defavorable des deux.
  * Royaume-Uni : bandes EPC (kWh/m2/an), etiquette sur l'energie seule.
  * Etats-Unis : bandes style HERS (kWh/m2/an), etiquette sur l'energie seule.
+ * Danemark : Energimaerke (A2020/A2015/A2010/B..G, kWh/m2/an, BR18),
+ * replie sur A..G (toutes les classes A20xx comptent comme A).
  *
  * L'etiquette stockee dans les donnees (certificate.label) est reelle et
  * fait foi pour l'affichage ; ces bandes ne servent qu'au newLabel simule
@@ -12,8 +14,8 @@
 
 import type { EnergyLabel } from '../types';
 
-/** Profil de bandes : fr (DPE), uk (EPC), us (HERS), nl (Energielabel). */
-export type EngineProfile = 'fr' | 'uk' | 'us' | 'nl';
+/** Profil de bandes : fr (DPE), uk (EPC), us (HERS), nl (Energielabel), dk (Energimaerke). */
+export type EngineProfile = 'fr' | 'uk' | 'us' | 'nl' | 'dk';
 
 const LABELS: EnergyLabel[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
@@ -32,11 +34,23 @@ const EP_THRESHOLDS_US: readonly number[] = [55, 70, 85, 100, 115, 130];
 /** Bandes Energielabel Pays-Bas (echelle A+++..G repliee sur A..G), kWh/m2/an. */
 const EP_THRESHOLDS_NL: readonly number[] = [120, 165, 205, 250, 300, 360];
 
+/**
+ * Bandes Energimaerke Danemark (BR18), kWh/m2/an de surface chauffee.
+ * L'echelle danoise reelle est A2020/A2015/A2010/B/C/D/E/F/G avec des
+ * cadres d'energie (energiramme) d'environ :
+ *   A2020 <= 27, A2015 <= 30, A2010 <= 52, B <= 70, C <= 110,
+ *   D <= 150, E <= 190, F <= 240, G au-dela.
+ * Le contrat moteur n'utilise que A..G : les trois classes A20xx sont
+ * repliees sur A (seuil 55 pour absorber A2010), le reste suit BR18.
+ */
+const EP_THRESHOLDS_DK: readonly number[] = [55, 70, 110, 150, 190, 240];
+
 const EP_THRESHOLDS_BY_PROFILE: Record<EngineProfile, readonly number[]> = {
   fr: EP_THRESHOLDS_FR,
   uk: EP_THRESHOLDS_UK,
   us: EP_THRESHOLDS_US,
   nl: EP_THRESHOLDS_NL,
+  dk: EP_THRESHOLDS_DK,
 };
 
 /** Bornes visuelles de la jauge A..G par profil (derniere borne = plafond). */
@@ -45,6 +59,7 @@ const GAUGE_BOUNDS_BY_PROFILE: Record<EngineProfile, readonly number[]> = {
   uk: [0, 45, 90, 140, 190, 260, 340, 450],
   us: [0, 55, 70, 85, 100, 115, 130, 180],
   nl: [0, 120, 165, 205, 250, 300, 360, 470],
+  dk: [0, 55, 70, 110, 150, 190, 240, 320],
 };
 
 /** Couleurs officielles de l'echelle, de A (vert) a G (rouge). */

@@ -1,9 +1,9 @@
 /**
  * Renovativ AI Map — shared summer comfort (degree-hours) model.
  *
- * Single source of truth for comfort.dh2025/dh2050/dh2100 across the three
- * region pipelines (ingest-bdnb.mjs, fetch-nyc.mjs, fetch-london.mjs) and the
- * one-shot backfill (recalc-comfort.mjs).
+ * Single source of truth for comfort.dh2025/dh2050/dh2100 across the
+ * region pipelines (ingest-bdnb.mjs, fetch-nyc.mjs, fetch-london.mjs,
+ * fetch-denmark.mjs) and the one-shot backfill (recalc-comfort.mjs).
  *
  * MODELLED field — no source dataset carries a summer-comfort indicator, so
  * degree-hours of summer discomfort (without active cooling) are estimated:
@@ -23,7 +23,8 @@
  *                   2006-2015: 0.85, >2015: 0.70 (modern summer codes).
  *   - uhi:          urban heat island, 1 + 0.35 x exp(-d / 8000), d = haversine
  *                   distance in metres from the building to the region centre
- *                   (fr [43.85, 7.05], uk [51.5, -0.12], us [40.75, -73.98]).
+ *                   (fr [43.85, 7.05], uk [51.5, -0.12], us [40.75, -73.98],
+ *                   dk [55.676, 12.568]).
  *   - heightFactor: floors >= 8 -> x1.20; floors >= 4 -> x1.10; else x1.0
  *                   (upper floors of tall buildings overheat more).
  *   - noise:        deterministic per building id (FNV-1a hash -> uniform in
@@ -31,7 +32,7 @@
  *                   micro-factors (orientation, shading, courtyard).
  *
  * Climate horizons: fr/us dh2050 = 1.45 x, dh2100 = 2.05 x;
- *                   uk    dh2050 = 1.5  x, dh2100 = 2.2  x.
+ *                   uk/dk dh2050 = 1.5  x, dh2100 = 2.2  x.
  */
 
 // ---------------------------------------------------------------------------
@@ -42,13 +43,17 @@ export const REGION_CONFIG = {
   fr: { center: [43.85, 7.05], m2050: 1.45, m2100: 2.05, defaultBase: 1600 },
   uk: { center: [51.5, -0.12], m2050: 1.5, m2100: 2.2, defaultBase: 750 },
   us: { center: [40.75, -73.98], m2050: 1.45, m2100: 2.05, defaultBase: 1350 },
+  // Copenhagen: cooler summers than London -> lower default base; Nordic
+  // maritime warming horizons same as uk. Calibrated to the dk stock median
+  // by fetch-denmark.mjs like the other regions.
+  dk: { center: [55.676, 12.568], m2050: 1.5, m2100: 2.2, defaultBase: 550 },
 };
 
 const MIN_BOUND = 150;
 const MAX_BOUND = 6000;
 
 // Per-region base (median of the current dataset), set by calibrateBase.
-const regionBase = { fr: null, uk: null, us: null };
+const regionBase = { fr: null, uk: null, us: null, dk: null };
 
 // ---------------------------------------------------------------------------
 // Deterministic hash (FNV-1a) -> [0, 1)
@@ -123,7 +128,7 @@ export const heightFactor = (floors) => (floors >= 8 ? 1.2 : floors >= 4 ? 1.1 :
 // computeComfort(building, regionId, regionCenter)
 //   building:     object with id, lat, lng, floors, constructionYear and
 //                 envelope { inertia, glazingRatio, solarProtection }
-//   regionId:     'fr' | 'uk' | 'us'
+//   regionId:     'fr' | 'uk' | 'us' | 'dk'
 //   regionCenter: optional [lat, lng] override (defaults to REGION_CONFIG)
 // Returns { dh2025, dh2050, dh2100 } (integers).
 // ---------------------------------------------------------------------------

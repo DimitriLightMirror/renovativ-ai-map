@@ -22,8 +22,11 @@ import { HEATWAVE_RECS_US } from '../content/heatwave-us';
 import { REGULATION_NL } from '../content/regulation-nl';
 import { GESTURES_NL } from '../content/gestures-nl';
 import { HEATWAVE_RECS_NL } from '../content/heatwave-nl';
+import { REGULATION_DK } from '../content/regulation-dk';
+import { GESTURES_DK } from '../content/gestures-dk';
+import { HEATWAVE_RECS_DK } from '../content/heatwave-dk';
 
-export type RegionId = 'fr' | 'uk' | 'us' | 'nl';
+export type RegionId = 'fr' | 'uk' | 'us' | 'nl' | 'dk';
 export type RegionLanguage = 'fr' | 'en';
 
 export interface RegionContent {
@@ -154,6 +157,29 @@ export const REGIONS: RegionConfig[] = [
       regulation: REGULATION_NL,
       gestures: GESTURES_NL,
       heatwave: HEATWAVE_RECS_NL,
+    },
+  },
+  {
+    id: 'dk',
+    name: 'Danemark · Copenhague',
+    shortName: 'Danemark',
+    language: 'en',
+    locale: 'da-DK',
+    mapCenter: [55.68, 12.55],
+    mapZoom: 11,
+    certificateName: 'Energimærke',
+    certificateShortName: 'Energimærke',
+    currencySymbol: 'kr.',
+    energyPrice: 2.5,
+    engineProfile: 'dk',
+    dataUrl: `${base}data/dk.json`,
+    sourceName: 'EMOData (Energistyrelsen)',
+    disclaimer:
+      'Real energy labels and addresses from the Danish Energy Agency EMOData register. Envelope attributes, floor counts and summer comfort are modelled per building; ep values are measured/calculated from the register where available, class-band estimates otherwise.',
+    content: {
+      regulation: REGULATION_DK,
+      gestures: GESTURES_DK,
+      heatwave: HEATWAVE_RECS_DK,
     },
   },
 ];

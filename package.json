@@ -8,7 +8,8 @@
     "build": "vite build",
     "typecheck": "tsc -b",
     "preview": "vite preview",
-    "ingest:bdnb": "node scripts/ingest-bdnb.mjs ../BDNB/csv"
+    "ingest:bdnb": "node scripts/ingest-bdnb.mjs ../BDNB/csv",
+    "fetch:denmark": "node scripts/fetch-denmark.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

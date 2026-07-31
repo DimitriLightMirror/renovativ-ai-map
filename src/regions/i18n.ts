@@ -367,6 +367,12 @@ const en: ChromeStrings = {
   },
 };
 
+// Les regions uk, us, nl et dk utilisent toutes le chrome anglais : le
+// dictionnaire est indexe par langue (RegionLanguage), pas par region.
+// Le nom de region, la devise (kr., locale da-DK) et le disclaimer danois
+// vivent dans la config dk de regions/index.ts ; les contenus metier dans
+// src/content/*-dk.ts. Aucune entree dk n'est donc requise ici (meme
+// precedent que nl, dont le commit n'a ajoute aucune entree au dictionnaire).
 const DICTS: Record<RegionLanguage, ChromeStrings> = { fr, en };
 
 export function stringsFor(language: RegionLanguage): ChromeStrings {

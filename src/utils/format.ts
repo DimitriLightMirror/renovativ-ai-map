@@ -1,7 +1,8 @@
 /**
  * format.ts — aides d'affichage pour l'interface.
  * Nombres, devises, unites et traduction des valeurs d'enum du contrat de
- * donnees, par locale de region : fr-FR (EUR), en-GB (GBP), en-US (USD).
+ * donnees, par locale de region : fr-FR (EUR), en-GB (GBP), en-US (USD),
+ * en-NL (EUR), da-DK (DKK, symbole "kr.").
  *
  * La locale active est fixee par App quand la region change, via
  * setFormatConfig. Toutes les fonctions lisent la configuration courante ;
@@ -39,7 +40,7 @@ export function formatNumber(n: number): string {
   return nf0.format(Math.round(n));
 }
 
-/** fr "12 400 €" / en-GB "£12,400" / en-US "$12,400" */
+/** fr "12 400 €" / en-GB "£12,400" / en-US "$12,400" / da-DK "kr.12.345" */
 export function formatCurrency(n: number): string {
   const num = formatNumber(n);
   return config.lang === 'fr' ? `${num} ${config.currencySymbol}` : `${config.currencySymbol}${num}`;
