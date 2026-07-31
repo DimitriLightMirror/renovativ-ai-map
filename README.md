@@ -17,12 +17,12 @@ npm install          # installer les dépendances
 npm run dev          # serveur de développement
 npm run build        # vérification TypeScript + build de production (dist/)
 npm run preview      # prévisualiser le build
-npm run ingest:bdnb  # régénérer src/data/buildings-fr.json depuis l'export BDNB
+npm run ingest:bdnb  # régénérer public/data/fr.json depuis l'export BDNB
 ```
 
 ## Données
 
-Le jeu de données embarqué (`src/data/buildings-fr.json`) est issu de la
+Le jeu de données embarqué (`public/data/fr.json`) est issu de la
 **BDNB réelle** (Base de Données Nationale des Bâtiments, CSTB), export
 open data du **département 06 (Alpes-Maritimes)**, sous
 [Licence Ouverte 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence).
@@ -37,9 +37,10 @@ sources ne sont jamais chargés en mémoire) :
 2. Jointure du DPE représentatif logement (classe, consommation EP, GES,
    systèmes, enveloppe), des attributs Fichiers Fonciers (usage, matériaux,
    nombre de logements) et de la meilleure adresse BAN (fiabilité maximale).
-3. Échantillon plafonné à 12 000 bâtiments, alloué par commune au prorata de
-   son parc (Nice, Cannes, Antibes, Grasse… incluses), priorité aux bâtiments
-   disposant d'un DPE réel (~98 % de l'échantillon).
+3. **Menton (INSEE 06083) est importée en totalité** (tous les bâtiments
+   géoréférencés BDNB, dont **47 Avenue de Sospel**). Les autres communes
+   sont plafonnées à 12 000 bâtiments au prorata de leur parc (Nice, Cannes,
+   Antibes, Grasse…), priorité aux bâtiments disposant d'un DPE réel.
 
 Champs **modélisés** (non mesurés par la BDNB) :
 

@@ -14,8 +14,9 @@
  *   - adresse.csv + rel_batiment_groupe_adresse.csv  BAN addresses
  *
  * Output:
- *   - src/data/buildings-fr.json  (compact, capped at CAP buildings, allocated
- *     per commune proportionally to its building stock, DPE holders first)
+ *   - public/data/fr.json  (compact, capped at CAP buildings for non-priority
+ *     communes, allocated proportionally to building stock, DPE holders first;
+ *     FULL_COMMUNE_CODES — currently Menton — are imported in full)
  *
  * CRS: source geometries are Lambert-93 (EPSG:2154). Centroids are computed in
  * Lambert-93 (area-weighted), footprint areas in m², then centroids are
@@ -49,8 +50,11 @@ const proj4 = require('proj4');
 // ---------------------------------------------------------------------------
 
 const CSV_DIR = path.resolve(process.argv[2] ?? '../BDNB/csv');
-const OUT_FILE = path.resolve('src/data/buildings-fr.json');
+const OUT_FILE = path.resolve('public/data/fr.json');
+/** Cap for communes that are *not* force-imported in full. */
 const CAP = 12000;
+/** INSEE codes imported without sampling (whole city). Menton = 06083. */
+const FULL_COMMUNE_CODES = new Set(['06083']);
 
 // EPSG:2154 definition (parameters from batiment_groupe.prj in the export).
 const L93 =
@@ -459,17 +463,36 @@ async function main() {
   });
   console.log(`Pass 5: ${totalParsed} buildings in ${communeCount.size} communes`);
 
-  // Proportional per-commune quota (largest remainder, exactly CAP total).
+  // Full-coverage communes (e.g. Menton) take their entire stock; remaining CAP
+  // slots are shared proportionally across every other commune.
   const quotas = new Map();
   {
-    const entries = [...communeCount.entries()].map(([code, c]) => {
-      const exact = (CAP * c.count) / totalParsed;
+    let fullStock = 0;
+    for (const code of FULL_COMMUNE_CODES) {
+      const c = communeCount.get(code);
+      if (!c) continue;
+      quotas.set(code, c.count);
+      fullStock += c.count;
+      console.log(`Full coverage: ${c.name} (${code}) → ${c.count} buildings`);
+    }
+
+    const otherEntries = [...communeCount.entries()].filter(([code]) => !FULL_COMMUNE_CODES.has(code));
+    const otherTotal = otherEntries.reduce((s, [, c]) => s + c.count, 0);
+    const remainingCap = CAP; // CAP applies to non-priority communes only
+    const entries = otherEntries.map(([code, c]) => {
+      const exact = otherTotal > 0 ? (remainingCap * c.count) / otherTotal : 0;
       return { code, exact, floor: Math.max(1, Math.floor(exact)) };
     });
     let sum = entries.reduce((s, e) => s + e.floor, 0);
-    entries.sort((a, b) => (b.exact - b.floor) - (a.exact - a.floor));
-    for (let i = 0; sum < CAP; i = (i + 1) % entries.length) { entries[i].floor++; sum++; }
+    if (entries.length > 0) {
+      entries.sort((a, b) => (b.exact - b.floor) - (a.exact - a.floor));
+      for (let i = 0; sum < remainingCap; i = (i + 1) % entries.length) {
+        entries[i].floor++;
+        sum++;
+      }
+    }
     for (const e of entries) quotas.set(e.code, e.floor);
+    console.log(`Other communes: ${remainingCap} slots (+ ${fullStock} full-coverage)`);
   }
 
   // Pass 6 — join + select (DPE holders prioritized within each commune quota).
@@ -480,6 +503,12 @@ async function main() {
     let bucket = kept.get(code);
     if (!bucket) { bucket = { dpe: [], noDpe: [] }; kept.set(code, bucket); }
     const total = bucket.dpe.length + bucket.noDpe.length;
+    if (FULL_COMMUNE_CODES.has(code)) {
+      // No sampling: keep every Menton (etc.) building.
+      if (hasDpe) bucket.dpe.push(rec);
+      else bucket.noDpe.push(rec);
+      return;
+    }
     if (hasDpe) {
       if (total < q) bucket.dpe.push(rec);
       else if (bucket.noDpe.length > 0) { bucket.noDpe.pop(); bucket.dpe.push(rec); }
@@ -644,7 +673,7 @@ async function main() {
   }
   console.log('\n=== INGEST SUMMARY ===');
   console.log(`Source buildings parsed : ${totalParsed}`);
-  console.log(`Kept (cap ${CAP})        : ${buildings.length}`);
+  console.log(`Kept (cap ${CAP} + full communes): ${buildings.length}`);
   console.log(`With real DPE           : ${withDpe} (${((withDpe / buildings.length) * 100).toFixed(1)}%)`);
   console.log('Label distribution      :', perLabel);
   console.log('Top 10 communes         :');
