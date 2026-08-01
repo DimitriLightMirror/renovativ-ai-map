@@ -261,6 +261,7 @@ export const GESTURES_NL: RenovationGesture[] = [
     description:
       'Replacement of the CV-ketel by an all-electric air-to-water heat pump on the existing emitters. Cuts heating energy by half to two thirds and takes the home off gas. Fixed price installed (6000-12000 € range).',
     fixedCost: 9000,
+    capacityPricing: false,
     epSavingPct: 0.5,
     gesSavingPct: 0.7,
     dhReductionPct: 0,
@@ -276,6 +277,7 @@ export const GESTURES_NL: RenovationGesture[] = [
     description:
       'A small heat pump next to the existing HR ketel: the heat pump covers most hours, the boiler only peaks and hot water. Lower cost entry off gas, common first step. Fixed price installed (4000-7000 € range).',
     fixedCost: 5500,
+    capacityPricing: false,
     epSavingPct: 0.35,
     gesSavingPct: 0.45,
     dhReductionPct: 0,
@@ -505,7 +507,7 @@ export const GESTURES_NL: RenovationGesture[] = [
   },
   {
     id: 'radiatorfolie_ventilatoren',
-    name: 'Radiatorfolie en radiatorventilatoren',
+    name: 'Radiatorfolie en radiatorventilatoren (radiator foil and fans)',
     lot: 'usage',
     mode: 'detail',
     description:

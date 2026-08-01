@@ -492,9 +492,26 @@ function stageEmit(cache) {
       : Math.round(ep * 0.21 * 10) / 10;
 
     const address = [cert.address_line_1, cert.address_line_2].filter(Boolean).join(', ') || 'Address not recorded';
-    const costNow = ['heating_cost_current', 'hot_water_cost_current', 'lighting_cost_current']
-      .map((k) => Number(cert[k])).filter((n) => Number.isFinite(n) && n > 0);
-    const annualCost = costNow.length ? Math.round(costNow.reduce((a, b) => a + b, 0)) : Math.round(ep * livingArea * 0.16);
+    // EPC domestic API may expose costs as numbers, numeric strings, or nested keys.
+    const costKeys = [
+      'heating_cost_current', 'hot_water_cost_current', 'lighting_cost_current',
+      'heating_cost', 'hot_water_cost', 'lighting_cost',
+    ];
+    const parseCost = (v) => {
+      if (v == null || v === '') return null;
+      const n = Number(String(v).replace(/,/g, ''));
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const costNow = costKeys.map((k) => parseCost(cert[k])).filter((n) => n != null);
+    // Fuel-aware UK fallback (£/kWh) when EPC cost fields are absent.
+    const heatDesc = String(cert.main_fuel ?? cert.main_heating_fuel ?? cert.mainheat_description ?? '').toLowerCase();
+    const ukTariff = /electric|heat.?pump/.test(heatDesc) ? 0.26
+      : /gas|mains gas/.test(heatDesc) ? 0.07
+      : /oil|lpg/.test(heatDesc) ? 0.09
+      : 0.12;
+    const annualCost = costNow.length
+      ? Math.round(costNow.reduce((a, b) => a + b, 0))
+      : Math.round(ep * livingArea * ukTariff);
     const co2Tonnes = Number(cert.co2_emissions_current);
 
     buildings.push({

@@ -17,7 +17,7 @@ export const GESTURES_FR: RenovationGesture[] = [
     mode: 'simple',
     description:
       'Pose d’un isolant en façade sous enduit ou bardage, 14 à 20 cm. Supprime les ponts thermiques et rénove l’aspect de la façade dans le même chantier. Coût par m² de mur.',
-    costPerM2: 120,
+    costPerM2: 180,
     epSavingPct: 0.2,
     gesSavingPct: 0.2,
     dhReductionPct: 0.05,

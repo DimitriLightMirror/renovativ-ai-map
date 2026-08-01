@@ -210,13 +210,16 @@ const HEAT_PUMP_PRICE_PER_KW: Record<EngineProfile, number> = {
 
 /** Repere les gestes "pompe a chaleur" du lot chauffage (id ou nom). */
 const HEAT_PUMP_PATTERN = /pac|heat[-_\s]?pump|warmtepomp|pompe/i;
+/** Hybride / appoint : prix forfaitaire, pas le stack capacitaire ASHP. */
+const HYBRID_HEAT_PUMP_PATTERN = /hybride|hybrid/i;
 
 /** Vrai si le geste est une pompe a chaleur (lot chauffage uniquement). */
 export function isHeatPumpGesture(gesture: RenovationGesture): boolean {
-  return (
-    gesture.lot === 'chauffage' &&
-    (HEAT_PUMP_PATTERN.test(gesture.id) || HEAT_PUMP_PATTERN.test(gesture.name))
-  );
+  if (gesture.lot !== 'chauffage') return false;
+  if (HYBRID_HEAT_PUMP_PATTERN.test(gesture.id) || HYBRID_HEAT_PUMP_PATTERN.test(gesture.name)) {
+    return false;
+  }
+  return HEAT_PUMP_PATTERN.test(gesture.id) || HEAT_PUMP_PATTERN.test(gesture.name);
 }
 
 /** Multiplicateur d'installation selon l'archetype de batiment. */
@@ -263,6 +266,8 @@ export function heatPumpCost(
   profile: EngineProfile = 'fr',
 ): CapacityCostDetail | null {
   if (!isHeatPumpGesture(gesture)) return null;
+  // Full installed packages (e.g. DK varmepumpe, NL fixed-price ASHP) skip kW stacking.
+  if (gesture.capacityPricing === false) return null;
   const capacityKW = heatPumpCapacityKw(building, profile);
   const pricePerKW = HEAT_PUMP_PRICE_PER_KW[profile];
   const multiplier = archetypeMultiplier(building.usage);

@@ -9,6 +9,7 @@ import {
   formatCurrency,
   formatEp,
   formatGes,
+  formatNumber,
 } from '../../utils/format';
 
 interface DpeTabProps {
@@ -148,6 +149,15 @@ export default function DpeTab({ building, region }: DpeTabProps) {
             <p className="card__label">{t.annualCost}</p>
             <p className="card__value">{formatCurrency(building.annualEnergyCostEur)}</p>
           </div>
+          {building.livingAreaM2 >= 500 && (
+            <div className="card">
+              <p className="card__label">{t.annualCostPerM2}</p>
+              <p className="card__value">
+                {formatCurrency(building.annualEnergyCostEur / building.livingAreaM2)}
+                <span className="card__hint"> / {formatNumber(building.livingAreaM2)} m²</span>
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

@@ -65,6 +65,7 @@ export default function MapView({
   const [infoOpen, setInfoOpen] = useState(false);
 
   const t = stringsFor(region.language);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   // Creation de la carte, une seule fois.
   useEffect(() => {
@@ -77,10 +78,9 @@ export default function MapView({
       preferCanvas: true,
       renderer: L.canvas({ padding: 0.5 }),
     });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    tileLayerRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributeurs',
+      attribution: t.map.osmAttribution,
     }).addTo(map);
     // Scale marker radius with zoom level (keep the selection ring visible).
     const applyRadii = () => {
@@ -100,12 +100,20 @@ export default function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Vol vers le centre de la region quand elle change.
+  // Vol vers le centre de la region quand elle change + attribution OSM localisee.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     map.flyTo(region.mapCenter, region.mapZoom, { duration: 1.2 });
-  }, [region]);
+    const prev = tileLayerRef.current;
+    if (prev) {
+      map.removeLayer(prev);
+      tileLayerRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: t.map.osmAttribution,
+      }).addTo(map);
+    }
+  }, [region, t.map.osmAttribution]);
 
   // Synchronisation des marqueurs avec les batiments de la region active :
   // suppression des anciens, ajout des nouveaux.
@@ -229,7 +237,11 @@ export default function MapView({
 
         {infoOpen && (
           <div className="map-info">
-            <p>{colorMode === 'dpe' ? t.map.infoCertificate : t.map.infoComfort}</p>
+            <p>
+              {colorMode === 'dpe'
+                ? t.map.infoCertificate.replace('{certificate}', region.certificateName)
+                : t.map.infoComfort}
+            </p>
           </div>
         )}
       </div>

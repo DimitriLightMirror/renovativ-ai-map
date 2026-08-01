@@ -1,6 +1,6 @@
 # Renovativ AI Map — Product Requirements Document
 
-**Version 1.0 — 2026-07-24**
+**Version 1.1 — 2026-08-01**
 **Source specification:** French video dictation transcript (`[French (auto-generated)] Video Project 24 [DownSub.com].txt`), a complete walkthrough of the Renovativ concept.
 **Brand:** Renovativ — terracotta `#D77259`, sand `#CDC7B7`, deep green `#273F3F`.
 
@@ -8,11 +8,11 @@
 
 ## 1. Vision
 
-Renovativ AI Map is a public web application that renders the **entire national building stock as an interactive map**. Clicking any building opens a diagnostic panel answering four questions:
+Renovativ AI Map is a public web application that renders **regional building-stock demos on an interactive map** (not a full national dump — static hosting cannot hold ~20M BDNB buildings). Clicking any building opens a diagnostic panel answering four questions:
 
 1. **What is this building?** — characteristics (geometry, envelope, systems), sourced from the national building database.
-2. **What is its energy performance certificate?** — DPE in France, EPC in the UK, HERS-style index in the USA, with the regulation that governs it.
-3. **What is the best renovation scenario?** — ranked renovation gestures (a "potential graph" / *graphique de chapelet*) with costs, savings and payback.
+2. **What is its energy performance certificate?** — DPE (FR), EPC (UK), HERS/LL84 (US), Energielabel (NL), Energimærke (DK), with the regulation that governs it.
+3. **What is the best renovation scenario?** — ranked renovation gestures (a "potential graph" / *graphique de chapelet*) with costs, savings and payback in local currency.
 4. **How prepared is it for heatwaves?** — summer comfort indicator at climate horizons 2025 / 2050 / 2100, plus concrete preparation measures linked to national regulation.
 
 The tool is designed to be **easy, pedagogical and accessible** — from non-expert building owners to energy auditors (transcript: *"pensé pour être facile d'utilisation, pédagogique et accessible à tout types d'utilisateurs, des non-experts jusqu'aux auditeurs énergétiques"*).
@@ -36,23 +36,26 @@ The tool is designed to be **easy, pedagogical and accessible** — from non-exp
 - Maintainer: CSTB. Open data, Licence Ouverte 2.0, distributed via data.gouv.fr.
 - Used fields (per building): `batiment_groupe_id`, RNB ID, address, usage, construction period, footprint, height, floors, living area, DPE labels (energy & GES), envelope archetypes (wall/roof/floor materials & insulation, glazing ratio & type, solar protection), systems (heating, DHW, cooling, ventilation, PV), and the precomputed **summer comfort indicator** (*indicateur de confort d'été*).
 - Missing values are completed by **enrichers** (statistical inference from archetype tables), exactly as in the transcript: *"Les informations manquantes sont complétées grâce aux enrichisseurs intégrés."*
-- **MVP approach:** the public demo ships a deterministic sample dataset (~1 500 buildings across 15 French metropolitan areas) generated to the BDNB schema, because the full BDNB extract (~20M buildings) cannot be hosted on static hosting. A `scripts/` ingestion pipeline is specified (§9) to swap in the real BDNB open-data extracts without code changes.
+- **Shipped France data:** real BDNB extract for **département 06 (Alpes-Maritimes)** — Menton imported in full (~5k georeferenced buildings), other communes sampled to ~12k (DPE-first). Total ~17k buildings in `public/data/fr.json`. Full national BDNB (~20M) requires tiled hosting (PMTiles / object storage), not a single GitHub Pages JSON.
+- Pipeline: `npm run ingest:bdnb` (`scripts/ingest-bdnb.mjs`).
 
 ### 3.2 Climate
 - Current weather: 2025 reference year.
-- Projections: 2050 and 2100 horizons from the French climate projection trajectory (DRIAS / Météo-France), enriched with the **urban heat island** effect by location, per the transcript.
+- Projections: 2050 and 2100 horizons from the French climate projection trajectory (DRIAS / Météo-France), enriched with the **urban heat island** effect by location, per the transcript. Summer comfort degree-hours are **modelled** in this demo.
 
-### 3.3 Branch data (UK / USA)
-- UK: EPC register (DLUHC open data), SAP/RdSAP methodology, UKCP18 climate projections.
-- USA: DOE climate zones, RESNET HERS index, IECC/ASHRAE 90.1 baselines, NOAA/CMIP heat projections.
+### 3.3 Other regions (same app, region registry — not git branches)
+- **UK · London:** EPC register (DLUHC), SAP/RdSAP.
+- **US · NYC Manhattan:** DoITT footprints, PLUTO, LL84 measured energy where available.
+- **NL · Randstad:** PDOK BAG buildings; Energielabel modelled pending EP-online.
+- **DK · Copenhagen:** EMOData Energimærke (demo bbox; national fetch is tiled and experimental).
 
 ---
 
 ## 4. Functional requirements
 
-### 4.1 MVP (this release, France)
+### 4.1 MVP (this release — five regional demos)
 
-**FR-1 Interactive national map.** Map of France; zoom reveals buildings; each building marker/footprint is colored by its **DPE label** (default) or by the **summer comfort indicator** (toggle). An info menu ("Pour en savoir plus") explains the active indicator. 2D/3D view toggle.
+**FR-1 Interactive regional map.** Country switcher (FR / UK / US / NL / DK); zoom reveals buildings; each marker is colored by the **national certificate label** (default) or by the **summer comfort indicator** (toggle). An info menu explains the active indicator.
 
 **FR-2 Address search.** Search bar (top right) to zoom to an address.
 
@@ -101,7 +104,7 @@ USA branch swaps in: RESNET HERS index, IECC 2021 / ASHRAE 90.1, DOE climate zon
 - Header: Renovativ logotype (terracotta), map fills the viewport, panel slides from the right.
 - Palette: deep green `#273F3F` (structure, header), terracotta `#D77259` (accent, active states, CTA), sand `#CDC7B7` (surfaces, panel background), white text on green/terracotta.
 - DPE scale uses the official French A(green)→G(red) color ramp; comfort bubbles green→red per the transcript.
-- UI language: French for the France release; English on `uk`/`usa` branches.
+- UI language: French for France; English chrome for UK / US / NL / DK (local proper nouns in content). Country pill labels follow the active UI language.
 - No em dashes, no AI-cliché copy. Short, direct sentences.
 
 ---
@@ -109,9 +112,9 @@ USA branch swaps in: RESNET HERS index, IECC 2021 / ASHRAE 90.1, DOE climate zon
 ## 7. Non-functional requirements
 
 - Static site (React + Vite + TypeScript + Leaflet), no backend; free hosting on GitHub Pages at `https://dimitrilightmirror.github.io/renovativ-ai-map/`.
-- Deterministic sample dataset generated by a committed Node script (`npm run generate:data`) — reproducible builds.
-- All calculations client-side in a pure-TypeScript engine module (unit-testable).
-- Country abstraction (`src/config/country.ts`) so `uk` and `usa` branches change config + content + data only, not components.
+- Real open-data JSON under `public/data/` regenerated by ingest/fetch scripts (`ingest:bdnb`, `fetch:denmark`, `fetch-london.mjs`, `fetch-nyc.mjs`).
+- All calculations client-side in a pure-TypeScript engine module (`src/engine/`), with fuel-aware local energy prices.
+- Region registry (`src/regions/index.ts`) — one app, five regions; not separate git branches.
 
 ---
 
@@ -119,22 +122,23 @@ USA branch swaps in: RESNET HERS index, IECC 2021 / ASHRAE 90.1, DOE climate zon
 
 ```
 renovativ-ai-map/
-├── .github/workflows/deploy.yml   # GitHub Pages deployment
-├── docs/PRD.md                    # this document
-├── public/brand/                  # logos
-├── scripts/generate-buildings.mjs # deterministic sample dataset generator
+├── .github/workflows/deploy.yml
+├── docs/PRD.md
+├── public/brand/
+├── public/data/                   # fr.json, uk-london.json, us-nyc.json, nl.json, dk.json
+├── scripts/                       # ingest-bdnb, fetch-denmark/london/nyc, recalc-energy-costs
 ├── src/
-│   ├── types/index.ts             # shared data contract (orchestrator-owned)
-│   ├── config/country.ts          # FR config (branch-swapped)
-│   ├── data/                      # buildings-fr.json + loader
-│   ├── engine/                    # dpe, comfort, scenarios, costs, simulation
-│   ├── content/                   # regulation corpus, gesture DB, heatwave recs
-│   ├── components/                # MapView, BuildingPanel, tabs, charts
-│   └── styles/theme.css           # brand tokens
+│   ├── types/index.ts             # shared Building contract
+│   ├── regions/                   # region registry + i18n chrome
+│   ├── data/                      # async JSON loader
+│   ├── engine/                    # dpe, comfort, scenarios, energyPrice, simulate
+│   ├── content/                   # regulation / gestures / heatwave per region
+│   ├── components/
+│   └── styles/theme.css
 └── index.html
 ```
 
-Branches: `main` (France) → `uk`, `usa`.
+Single `main` branch; regions switch in-app via `src/regions/index.ts`.
 
 ---
 

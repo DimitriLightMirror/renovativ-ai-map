@@ -1,74 +1,57 @@
 # Renovativ AI Map
 
-Carte publique et interactive du parc bâti : diagnostic énergétique (DPE en France),
-scénarios de rénovation chiffrés et préparation aux canicules, à l'échelle du bâtiment.
-Modèle de données inspiré de la BDNB (Base de Données Nationale des Bâtiments, CSTB).
+Public interactive map of real building stocks: energy certificates (DPE, EPC,
+HERS, Energielabel, Energimærke), costed renovation scenarios and heatwave
+readiness at building scale.
 
-Voir le cahier des charges complet : [docs/PRD.md](docs/PRD.md).
+Live site: https://dimitrilightmirror.github.io/renovativ-ai-map/
+
+See also [docs/PRD.md](docs/PRD.md).
 
 ## Stack
 
-React 18 · TypeScript · Vite · Leaflet · hébergement statique GitHub Pages.
+React 18 · TypeScript · Vite · Leaflet · static hosting on GitHub Pages.
 
 ## Scripts
 
 ```bash
-npm install          # installer les dépendances
-npm run dev          # serveur de développement
-npm run build        # vérification TypeScript + build de production (dist/)
-npm run preview      # prévisualiser le build
-npm run ingest:bdnb  # régénérer public/data/fr.json depuis l'export BDNB
+npm install
+npm run dev
+npm run build
+npm run preview
+npm run ingest:bdnb     # regenerate public/data/fr.json from BDNB CSV
+npm run fetch:denmark   # EMOData → public/data/dk.json (needs .env.local)
 ```
 
-## Données
+Other fetch pipelines (not wired as npm scripts): `scripts/fetch-london.mjs`,
+`scripts/fetch-nyc.mjs`. After tariff changes: `node scripts/recalc-energy-costs.mjs`.
 
-Le jeu de données embarqué (`public/data/fr.json`) est issu de la
-**BDNB réelle** (Base de Données Nationale des Bâtiments, CSTB), export
-open data du **département 06 (Alpes-Maritimes)**, sous
-[Licence Ouverte 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence).
+## Live regions
 
-Pipeline (`scripts/ingest-bdnb.mjs`, streaming ligne à ligne — les CSV
-sources ne sont jamais chargés en mémoire) :
+| Id | Coverage | Source | Certificate | Currency |
+|----|----------|--------|-------------|----------|
+| `fr` | Alpes-Maritimes (06), **Menton in full** | BDNB | DPE | € |
+| `uk` | London | EPC register (DLUHC) | EPC | £ |
+| `us` | Manhattan (NYC) | LL84 / PLUTO / DoITT | HERS / LL84 | $ |
+| `nl` | Randstad | PDOK BAG | Energielabel (modelled) | € |
+| `dk` | Copenhagen (demo) | EMOData | Energimærke | kr. |
 
-1. `batiment_groupe.csv` — géométrie (WKT MULTIPOLYGON, Lambert-93 EPSG:2154) ;
-   centroïde surfacique et emprise au sol en m² calculés en Lambert-93, puis
-   reprojetés en WGS84 avec proj4 (définition issue de `batiment_groupe.prj`,
-   validée sur un point connu d'Aiglun avant conversion de masse).
-2. Jointure du DPE représentatif logement (classe, consommation EP, GES,
-   systèmes, enveloppe), des attributs Fichiers Fonciers (usage, matériaux,
-   nombre de logements) et de la meilleure adresse BAN (fiabilité maximale).
-3. **Menton (INSEE 06083) est importée en totalité** (tous les bâtiments
-   géoréférencés BDNB, dont **47 Avenue de Sospel**). Les autres communes
-   sont plafonnées à 12 000 bâtiments au prorata de leur parc (Nice, Cannes,
-   Antibes, Grasse…), priorité aux bâtiments disposant d'un DPE réel.
+France pipeline notes:
 
-Champs **modélisés** (non mesurés par la BDNB) :
+1. BDNB geometry (Lambert-93 → WGS84), DPE, Fichiers Fonciers, BAN address.
+2. **Menton (INSEE 06083) imported exhaustively** (incl. 47 Avenue de Sospel);
+   other communes capped at 12 000 buildings, DPE-first.
+3. Summer comfort (`dh2025/2050/2100`) is **modelled**, not measured in this export.
 
-- `comfort.dh2025/dh2050/dh2100` — cet export ne contient pas d'indicateur de
-  confort d'été. Les degrés-heures d'inconfort sont estimés depuis une base
-  méditerranéenne à été chaud (~1 600 dh en 2025 pour le 06), ajustée par
-  l'inertie, le taux de vitrage, les protections solaires et l'époque de
-  construction ; horizons 2050 = ×1,45 et 2100 = ×2,05.
-- Bâtiments sans DPE : étiquette estimée par défauts d'époque de construction.
-- Valeurs U / isolation d'enveloppe absentes du DPE : défauts d'époque.
+Denmark: default bbox is central Copenhagen. National tiling is supported via
+`EMO_BBOX` but EMOData enforces ~0.60 deg² per request (auto-tiled). Do not
+ship multi‑million-label `dk.json` to GitHub Pages as a single file.
 
-Les CSV sources vivent hors du dépôt (`../BDNB/csv`) et ne sont pas versionnés.
+Energy bills and renovation savings use **fuel-aware local tariffs** (district
+heat vs electricity, etc.). Field `annualEnergyCostEur` is in the region’s
+currency despite the historical name.
 
-## Régions en ligne
+## Deploy
 
-- `fr` — France · Alpes-Maritimes 06 (BDNB, DPE, €)
-- `uk` — Royaume-Uni · Londres (EPC register, £)
-- `us` — États-Unis · New York (LL84 / PLUTO, $)
-- `nl` — Pays-Bas · Randstad (PDOK BAG, Energielabel, €) — bâtiments réels
-  BAG (adresses, bouwjaar, surfaces) ; étiquettes énergie et attributs
-  d'enveloppe modélisés en attendant une clé API EP-online, confort d'été
-  modélisé (proxy TOjuli).
-
-Le registre `src/regions/index.ts` pilote le sélecteur de pays, le chargement
-des données (`public/data/*.json`) et les contenus de chaque région, sans
-modifier le contrat partagé `src/types/index.ts`.
-
-## Déploiement
-
-Le workflow `.github/workflows/deploy.yml` publie `dist/` sur GitHub Pages à
-chaque push sur `main` (site projet : base `/renovativ-ai-map/`).
+`.github/workflows/deploy.yml` publishes `dist/` to GitHub Pages on every push
+to `main` (project site base `/renovativ-ai-map/`).

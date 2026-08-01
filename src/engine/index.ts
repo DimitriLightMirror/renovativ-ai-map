@@ -32,3 +32,5 @@ export type { ApplicabilityCheck, EngineOptions } from './scenarios';
 
 export { simulateScenario, suggestBestPackage, MAX_PACKAGE_GESTURES } from './simulate';
 export type { SimulationResult, PackageSuggestion } from './simulate';
+
+export { energyPriceForBuilding, estimateAnnualEnergyCost } from './energyPrice';

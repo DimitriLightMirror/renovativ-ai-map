@@ -453,6 +453,12 @@ button {
   color: var(--color-deep-green);
 }
 
+.card__hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-muted, #5c5c5c);
+}
+
 /* --------------------------------------------------------------------------
    Map leaflet root & overlay controls
    -------------------------------------------------------------------------- */

@@ -32,8 +32,10 @@ export interface ChromeStrings {
     horizonNote: string;
     moreInfoShow: string;
     moreInfoHide: string;
+    /** Use `{certificate}` placeholder for the regional certificate name. */
     infoCertificate: string;
     infoComfort: string;
+    osmAttribution: string;
   };
   panel: {
     ariaLabel: string;
@@ -88,6 +90,7 @@ export interface ChromeStrings {
     annualConsumption: string;
     annualEmissions: string;
     annualCost: string;
+    annualCostPerM2: string;
     regulationTitle: string;
   };
   renovation: {
@@ -151,9 +154,11 @@ const fr: ChromeStrings = {
     moreInfoShow: 'Pour en savoir plus',
     moreInfoHide: 'Masquer l’explication',
     infoCertificate:
-      'Le DPE classe chaque bâtiment de A à G selon sa consommation d’énergie primaire et ses émissions de CO2. La classe retenue est la moins bonne des deux. G signale une passoire thermique.',
+      'Le {certificate} classe chaque bâtiment de A à G selon sa consommation d’énergie et ses émissions de CO2. La classe retenue est en général la moins bonne des deux indicateurs. Les bandes F et G signalent les bâtiments les moins performants, prioritaires pour la rénovation.',
     infoComfort:
       'Le confort d’été mesure les degrés-heures d’inconfort : le cumul des dépassements de température intérieure pendant la saison chaude, sans climatisation. Ici, la projection tient compte du réchauffement attendu en 2050 et de l’îlot de chaleur urbain.',
+    osmAttribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributeurs',
   },
   panel: {
     ariaLabel: 'Diagnostic du bâtiment',
@@ -209,6 +214,7 @@ const fr: ChromeStrings = {
     annualConsumption: 'Consommation annuelle',
     annualEmissions: 'Émissions annuelles',
     annualCost: 'Coût énergétique annuel',
+    annualCostPerM2: 'Coût annuel par m²',
     regulationTitle: 'Réglementation applicable',
   },
   renovation: {
@@ -250,14 +256,14 @@ const en: ChromeStrings = {
     loading: 'Loading data…',
   },
   search: {
-    placeholder: 'Search an address, a city…',
+    placeholder: 'Search for an address or city…',
     ariaLabel: 'Search an address',
   },
   stats: {
     ariaLabel: 'Building stock statistics',
     buildingsMapped: 'buildings mapped',
     cities: 'cities',
-    ratedForG: 'rated F or G',
+    ratedForG: 'in the lowest bands (F–G)',
   },
   map: {
     ariaLabel: 'Building stock map',
@@ -275,9 +281,11 @@ const en: ChromeStrings = {
     moreInfoShow: 'Learn more',
     moreInfoHide: 'Hide the explanation',
     infoCertificate:
-      'The energy certificate rates each building from A to G from its energy use and carbon emissions. G flags the worst performers, the first targets for renovation.',
+      'The {certificate} rates each building from A to G from its energy use and carbon emissions. The worst performers (typically F and G) are the first targets for renovation.',
     infoComfort:
       'Summer comfort is measured in discomfort degree-hours: the cumulated excess of indoor temperature over the warm season, without air conditioning. The projection shown here accounts for the warming expected by 2050 and the urban heat island.',
+    osmAttribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   },
   panel: {
     ariaLabel: 'Building diagnostic',
@@ -333,6 +341,7 @@ const en: ChromeStrings = {
     annualConsumption: 'Annual consumption',
     annualEmissions: 'Annual emissions',
     annualCost: 'Annual energy cost',
+    annualCostPerM2: 'Annual cost per m²',
     regulationTitle: 'Applicable regulation',
   },
   renovation: {

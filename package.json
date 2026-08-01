@@ -2,6 +2,8 @@
   "name": "renovativ-ai-map",
   "private": true,
   "version": "0.1.0",
+  "description": "Interactive map of real building stocks — energy labels, renovation scenarios and heatwave readiness across FR (Menton/06), London, NYC, Randstad and Copenhagen.",
+  "homepage": "https://dimitrilightmirror.github.io/renovativ-ai-map/",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +11,8 @@
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "ingest:bdnb": "node scripts/ingest-bdnb.mjs ../BDNB/csv",
-    "fetch:denmark": "node scripts/fetch-denmark.mjs"
+    "fetch:denmark": "node scripts/fetch-denmark.mjs",
+    "recalc:energy": "node scripts/recalc-energy-costs.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Building } from './types';
 import { getCached, loadRegion, statsOf } from './data';
-import { DEFAULT_REGION_ID, REGIONS, getRegion, type RegionId } from './regions';
+import {
+  DEFAULT_REGION_ID,
+  REGIONS,
+  getRegion,
+  regionFullName,
+  regionShortName,
+  type RegionId,
+} from './regions';
 import { stringsFor } from './regions/i18n';
 import { setFormatConfig } from './utils/format';
 import MapView, { type FocusRequest, type MapColorMode } from './components/MapView';
@@ -27,9 +34,10 @@ export default function App() {
   const [colorMode, setColorMode] = useState<MapColorMode>('dpe');
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
 
-  // Locale, devise et langue des formats suivent la region active.
+  // Locale, devise, langue des formats et <html lang> suivent la region active.
   useEffect(() => {
     setFormatConfig(region.locale, region.currencySymbol, region.language);
+    document.documentElement.lang = region.language === 'fr' ? 'fr' : 'en';
   }, [region]);
 
   // Chargement a la demande du JSON de la region (cache memoire ensuite).
@@ -96,10 +104,10 @@ export default function App() {
               type="button"
               className={`region-selector__btn ${r.id === regionId ? 'is-active' : ''}`}
               aria-pressed={r.id === regionId}
-              title={r.name}
+              title={regionFullName(r, region.language)}
               onClick={() => handleRegionChange(r.id)}
             >
-              {r.shortName}
+              {regionShortName(r, region.language)}
             </button>
           ))}
         </nav>

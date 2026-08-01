@@ -121,7 +121,11 @@ export interface Building {
   /** Annual figures for the whole building */
   annualConsumptionKwhEp: number;
   annualGesKgCo2: number;
-  annualEnergyCostEur: number; // expressed in country currency despite the name
+  /**
+   * Indicative annual energy cost in the region's local currency
+   * (€ / £ / $ / kr.) — the historical `Eur` suffix is kept for the JSON contract.
+   */
+  annualEnergyCostEur: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +154,11 @@ export interface RenovationGesture {
   /** Cost model */
   costPerM2?: number;    // applied to relevant surface (wall, roof, living area)
   fixedCost?: number;
+  /**
+   * When false, heat-pump gestures use fixedCost only (full installed price).
+   * Default true: engine applies (fixedCost + kW × price/kW) × archetype.
+   */
+  capacityPricing?: boolean;
   /** Impact model (fractions, 0..1) */
   epSavingPct: number;       // reduction of primary energy
   gesSavingPct: number;      // reduction of GES

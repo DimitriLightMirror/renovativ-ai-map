@@ -637,7 +637,7 @@ async function main() {
       annualConsumptionKwhEp: annualConsumption,
       annualGesKgCo2: Math.round(ges * livingArea),
       // $0.15/kWh documented NYC blended energy price; field holds USD on the US branch.
-      annualEnergyCostEur: Math.round(annualConsumption * 0.15),
+      annualEnergyCostEur: Math.round(annualConsumption * 0.18),
       _energyReal: energyReal, // stripped before write; used for the summary
       _heatingReal: heatingReal,
     };

@@ -40,10 +40,16 @@ export function formatNumber(n: number): string {
   return nf0.format(Math.round(n));
 }
 
-/** fr "12 400 €" / en-GB "£12,400" / en-US "$12,400" / da-DK "kr.12.345" */
+/** fr "12 400 €" / en-GB "£12,400" / en-US "$12,400" / da-DK "12.345 kr." */
 export function formatCurrency(n: number): string {
   const num = formatNumber(n);
-  return config.lang === 'fr' ? `${num} ${config.currencySymbol}` : `${config.currencySymbol}${num}`;
+  const symbol = config.currencySymbol;
+  // Danish: amount then kr. — French: amount then symbol — EN £/$ prefix.
+  if (config.locale.startsWith('da') || symbol === 'kr.' || symbol === 'kr') {
+    return `${num} ${symbol.endsWith('.') ? symbol : `${symbol}.`}`;
+  }
+  if (config.lang === 'fr') return `${num} ${symbol}`;
+  return `${symbol}${num}`;
 }
 
 /** "1 733 m²" */

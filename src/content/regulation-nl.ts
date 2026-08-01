@@ -72,7 +72,7 @@ export const REGULATION_NL: RegulationItem[] = [
     title: 'Minimum energielabel C voor huurwoningen (2030 target)',
     shortName: 'Label C rental 2030',
     summary:
-      'The government has announced a minimum energielabel C for rental homes from 2030: landlords of homes labelled E, F or G would have to renovate before renting them out again. The proposal covers both social and private rentals. In this app, homes labelled E, F or G are flagged as below the 2030 target, the Dutch equivalent of the French passoire thermique.',
+      'The government has announced a minimum energielabel C for rental homes from 2030: landlords of homes labelled E, F or G would have to renovate before renting them out again. The proposal covers both social and private rentals. In this app, homes labelled E, F or G are flagged as below the 2030 target — the worst-performing rental stock.',
     obligations: [
       'From 2030, rental homes should hold at least energielabel C.',
       'Labels E, F and G are below target and need renovation first.',

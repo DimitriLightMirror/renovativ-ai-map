@@ -2,7 +2,12 @@ import { useMemo, useState } from 'react';
 import type { Building, OptimizationObjective, ScenarioResult } from '../../types';
 import type { RegionConfig } from '../../regions';
 import { stringsFor, heatPumpSizingNote } from '../../regions/i18n';
-import { rankGestures, suggestBestPackage, type EngineOptions } from '../../engine';
+import {
+  energyPriceForBuilding,
+  rankGestures,
+  suggestBestPackage,
+  type EngineOptions,
+} from '../../engine';
 import { heatPumpCapacityKw, isHeatPumpGesture } from '../../engine/scenarios';
 import RegulationCard from '../RegulationCard';
 import {
@@ -110,10 +115,10 @@ export default function RenovationTab({ building, region }: RenovationTabProps) 
   const engineOptions: EngineOptions = useMemo(
     () => ({
       gestures: region.content.gestures,
-      energyPrice: region.energyPrice,
+      energyPrice: energyPriceForBuilding(building, region),
       profile: region.engineProfile,
     }),
-    [region],
+    [building, region],
   );
 
   const ranked = useMemo(
@@ -133,7 +138,7 @@ export default function RenovationTab({ building, region }: RenovationTabProps) 
   /** Puissance PAC dimensionnee sur ce batiment, null si le geste n'est pas une PAC. */
   const sizingKw = (gestureId: string): number | null => {
     const gesture = region.content.gestures.find((g) => g.id === gestureId);
-    if (!gesture || !isHeatPumpGesture(gesture)) return null;
+    if (!gesture || !isHeatPumpGesture(gesture) || gesture.capacityPricing === false) return null;
     return heatPumpCapacityKw(building, region.engineProfile);
   };
 
@@ -168,7 +173,7 @@ export default function RenovationTab({ building, region }: RenovationTabProps) 
             <Chapelet results={top} ariaLabel={t.chapeletAriaLabel} sizingKw={sizingKw} />
             {hpInTop.map((r) => (
               <p key={r.gesture.id} className="note">
-                {`${r.gesture.name} : ${heatPumpSizingNote(
+                {`${r.gesture.name}${region.language === 'fr' ? ' : ' : ': '}${heatPumpSizingNote(
                   region.language,
                   sizingKw(r.gesture.id) ?? 0,
                 )}`}
